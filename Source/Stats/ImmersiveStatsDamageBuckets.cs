@@ -2,36 +2,38 @@ namespace ImmersiveStats.Stats;
 
 internal sealed class ImmersiveStatsDamageBuckets
 {
-    public float Damage { get; private set; }
+    private readonly Dictionary<StatBarSegmentKind, float> _amounts = new();
 
-    public float Cold { get; private set; }
+    public float Damage => Get(StatBarSegmentKind.Damage);
 
-    public float Heat { get; private set; }
+    public float Cold => Get(StatBarSegmentKind.Cold);
 
-    public float Hunger { get; private set; }
+    public float Heat => Get(StatBarSegmentKind.Heat);
+
+    public float Poison => Get(StatBarSegmentKind.Poison);
+
+    public float Fall => Get(StatBarSegmentKind.Fall);
+
+    public float Suffocation => Get(StatBarSegmentKind.Suffocation);
+
+    public float Crushing => Get(StatBarSegmentKind.Crushing);
+
+    public float Electricity => Get(StatBarSegmentKind.Electricity);
+
+    public float Acid => Get(StatBarSegmentKind.Acid);
+
+    public float Hunger => Get(StatBarSegmentKind.Hunger);
+
+    public IReadOnlyDictionary<StatBarSegmentKind, float> Amounts => _amounts;
 
     public void Add(StatBarSegmentKind kind, float healthPoints)
     {
-        if (!IsFinitePositive(healthPoints))
+        if (!StatBarSegmentCatalog.IsReducer(kind) || !IsFinitePositive(healthPoints))
         {
             return;
         }
 
-        switch (kind)
-        {
-            case StatBarSegmentKind.Cold:
-                Cold += healthPoints;
-                break;
-            case StatBarSegmentKind.Heat:
-                Heat += healthPoints;
-                break;
-            case StatBarSegmentKind.Hunger:
-                Hunger += healthPoints;
-                break;
-            default:
-                Damage += healthPoints;
-                break;
-        }
+        _amounts[kind] = Get(kind) + healthPoints;
     }
 
     public void ReconcileToMissingHealth(float missingHealth)
@@ -46,32 +48,34 @@ internal sealed class ImmersiveStatsDamageBuckets
         float tracked = Total;
         if (tracked <= 0)
         {
-            Damage = missingHealth;
+            _amounts[StatBarSegmentKind.Damage] = missingHealth;
             return;
         }
 
         if (tracked < missingHealth)
         {
-            Damage += missingHealth - tracked;
+            _amounts[StatBarSegmentKind.Damage] = Damage + missingHealth - tracked;
             return;
         }
 
         float scale = missingHealth / tracked;
-        Damage *= scale;
-        Cold *= scale;
-        Heat *= scale;
-        Hunger *= scale;
+        foreach (StatBarSegmentKind kind in StatBarSegmentCatalog.ReducerKinds)
+        {
+            _amounts[kind] = Get(kind) * scale;
+        }
     }
 
     public void Clear()
     {
-        Damage = 0;
-        Cold = 0;
-        Heat = 0;
-        Hunger = 0;
+        _amounts.Clear();
     }
 
-    private float Total => Damage + Cold + Heat + Hunger;
+    private float Total => StatBarSegmentCatalog.ReducerKinds.Sum(Get);
+
+    private float Get(StatBarSegmentKind kind)
+    {
+        return _amounts.TryGetValue(kind, out float amount) ? amount : 0;
+    }
 
     private static float SanitizeAmount(float value)
     {

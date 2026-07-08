@@ -5,14 +5,6 @@ public static class StatBarLayout
     public const float DefaultCapacity = 100f;
     private const float Epsilon = 0.0001f;
 
-    private static readonly StatBarSegmentKind[] ReducerOrder =
-    [
-        StatBarSegmentKind.Damage,
-        StatBarSegmentKind.Cold,
-        StatBarSegmentKind.Heat,
-        StatBarSegmentKind.Hunger,
-    ];
-
     public static StatBarLayoutResult Calculate(StatBarState state)
     {
         float capacity = SanitizeCapacity(state.Capacity);
@@ -21,18 +13,13 @@ public static class StatBarLayout
             return new StatBarLayoutResult(0, 0, []);
         }
 
-        Dictionary<StatBarSegmentKind, float> requested = new()
-        {
-            [StatBarSegmentKind.Damage] = SanitizeAmount(state.Damage),
-            [StatBarSegmentKind.Cold] = SanitizeAmount(state.Cold),
-            [StatBarSegmentKind.Heat] = SanitizeAmount(state.Heat),
-            [StatBarSegmentKind.Hunger] = SanitizeAmount(state.Hunger),
-        };
+        Dictionary<StatBarSegmentKind, float> requested = StatBarSegmentCatalog.ReducerKinds
+            .ToDictionary(kind => kind, kind => SanitizeAmount(state.GetReducer(kind)));
 
         Dictionary<StatBarSegmentKind, float> rendered = new();
         float remaining = capacity;
 
-        foreach (StatBarSegmentKind kind in ReducerOrder)
+        foreach (StatBarSegmentKind kind in StatBarSegmentCatalog.ReducerKinds)
         {
             float amount = Math.Min(requested[kind], remaining);
             rendered[kind] = amount;
@@ -55,7 +42,7 @@ public static class StatBarLayout
             cursor = end;
         }
 
-        foreach (StatBarSegmentKind kind in ReducerOrder)
+        foreach (StatBarSegmentKind kind in StatBarSegmentCatalog.ReducerKinds)
         {
             float amount = rendered[kind];
             if (amount <= Epsilon)
@@ -104,6 +91,12 @@ public static class StatBarLayout
         StatBarSegmentKind.Damage => "damage",
         StatBarSegmentKind.Cold => "cold",
         StatBarSegmentKind.Heat => "heat",
+        StatBarSegmentKind.Poison => "poison",
+        StatBarSegmentKind.Fall => "fall",
+        StatBarSegmentKind.Suffocation => "suffocation",
+        StatBarSegmentKind.Crushing => "crushing",
+        StatBarSegmentKind.Electricity => "electricity",
+        StatBarSegmentKind.Acid => "acid",
         StatBarSegmentKind.Hunger => "hunger",
         _ => "unknown",
     };

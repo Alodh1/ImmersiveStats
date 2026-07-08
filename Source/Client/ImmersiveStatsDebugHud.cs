@@ -7,8 +7,9 @@ namespace ImmersiveStats.Client;
 internal sealed class ImmersiveStatsDebugHud : HudElement
 {
     private const string ComposerKey = "immersivestats-debug";
-    private const double Width = 320;
-    private const double Height = 154;
+    private const double Width = 640;
+    private const double Height = 184;
+    private const double ColumnWidth = 310;
 
     private readonly ImmersiveStatsClientConfig _config;
     private readonly DebugStatBarState _debugState;
@@ -54,11 +55,13 @@ internal sealed class ImmersiveStatsDebugHud : HudElement
             .AddShadedDialogBG(bgBounds, false, 4, 0.78f)
             .BeginChildElements(bgBounds);
 
-        double cursorY = 14;
-        AddDebugSlider(composer, "Damage", StatBarSegmentKind.Damage, ref cursorY);
-        AddDebugSlider(composer, "Cold", StatBarSegmentKind.Cold, ref cursorY);
-        AddDebugSlider(composer, "Heat", StatBarSegmentKind.Heat, ref cursorY);
-        AddDebugSlider(composer, "Hunger", StatBarSegmentKind.Hunger, ref cursorY);
+        for (int i = 0; i < StatBarSegmentCatalog.ReducerKinds.Count; i++)
+        {
+            StatBarSegmentKind kind = StatBarSegmentCatalog.ReducerKinds[i];
+            double sliderX = 16 + (i % 2) * ColumnWidth;
+            double sliderY = 14 + (i / 2) * 32;
+            AddDebugSlider(composer, StatBarSegmentCatalog.DisplayName(kind), kind, sliderX, sliderY);
+        }
 
         Composers[ComposerKey] = composer.EndChildElements().Compose(false);
     }
@@ -69,14 +72,13 @@ internal sealed class ImmersiveStatsDebugHud : HudElement
         base.Dispose();
     }
 
-    private void AddDebugSlider(GuiComposer composer, string label, StatBarSegmentKind kind, ref double cursorY)
+    private void AddDebugSlider(GuiComposer composer, string label, StatBarSegmentKind kind, double x, double y)
     {
         string key = $"debug-{kind}";
         composer
-            .AddStaticText(label, CairoFont.WhiteSmallText(), ElementBounds.Fixed(16, cursorY + 2, 72, 20))
-            .AddSlider(value => OnDebugValueChanged(kind, value), ElementBounds.Fixed(96, cursorY, 204, 22), key);
+            .AddStaticText(label, CairoFont.WhiteSmallText(), ElementBounds.Fixed(x, y + 2, 92, 20))
+            .AddSlider(value => OnDebugValueChanged(kind, value), ElementBounds.Fixed(x + 98, y, 196, 22), key);
         composer.GetSlider(key).SetValues(_config.GetDebugValue(kind), 0, ImmersiveStatsClientConfig.MaximumDebugValue, 1);
-        cursorY += 32;
     }
 
     private bool OnDebugValueChanged(StatBarSegmentKind kind, int value)

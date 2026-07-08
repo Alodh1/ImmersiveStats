@@ -114,10 +114,7 @@ internal sealed class ImmersiveStatsDamageTrackerBehavior : EntityBehavior
             ReadFloat(health, "maxhealth"),
             ReadFloat(hunger, "currentsaturation"),
             ReadFloat(hunger, "maxsaturation"),
-            _buckets.Damage,
-            _buckets.Cold,
-            _buckets.Heat,
-            _buckets.Hunger);
+            _buckets.Amounts);
     }
 
     private static bool SnapshotsEqual(ImmersiveStatsVitalsSnapshot left, ImmersiveStatsVitalsSnapshot right)
@@ -130,6 +127,12 @@ internal sealed class ImmersiveStatsDamageTrackerBehavior : EntityBehavior
             && Close(left.DamageReducer, right.DamageReducer)
             && Close(left.ColdReducer, right.ColdReducer)
             && Close(left.HeatReducer, right.HeatReducer)
+            && Close(left.PoisonReducer, right.PoisonReducer)
+            && Close(left.FallReducer, right.FallReducer)
+            && Close(left.SuffocationReducer, right.SuffocationReducer)
+            && Close(left.CrushingReducer, right.CrushingReducer)
+            && Close(left.ElectricityReducer, right.ElectricityReducer)
+            && Close(left.AcidReducer, right.AcidReducer)
             && Close(left.HungerReducer, right.HungerReducer);
     }
 

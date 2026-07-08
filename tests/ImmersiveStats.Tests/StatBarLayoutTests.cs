@@ -67,5 +67,28 @@ public sealed class StatBarLayoutTests
         Assert.Equal(StatBarSegmentKind.Hunger, layout.Segments.Last().Kind);
     }
 
+    [Fact]
+    public void ExtendedReducersRenderInConfiguredOrder()
+    {
+        var state = new StatBarState(100, new Dictionary<StatBarSegmentKind, float>
+        {
+            [StatBarSegmentKind.Damage] = 1,
+            [StatBarSegmentKind.Cold] = 1,
+            [StatBarSegmentKind.Heat] = 1,
+            [StatBarSegmentKind.Poison] = 1,
+            [StatBarSegmentKind.Fall] = 1,
+            [StatBarSegmentKind.Suffocation] = 1,
+            [StatBarSegmentKind.Crushing] = 1,
+            [StatBarSegmentKind.Electricity] = 1,
+            [StatBarSegmentKind.Acid] = 1,
+            [StatBarSegmentKind.Hunger] = 1,
+        });
+
+        StatBarLayoutResult layout = StatBarLayout.Calculate(state);
+
+        StatBarSegmentKind[] expected = new[] { StatBarSegmentKind.Energy }.Concat(StatBarSegmentCatalog.ReducerKinds).ToArray();
+        Assert.Equal(expected, layout.Segments.Select(segment => segment.Kind).ToArray());
+    }
+
     private static void AssertClose(float expected, float actual) => Assert.True(Math.Abs(expected - actual) < 0.0001f, $"Expected {expected}, got {actual}.");
 }

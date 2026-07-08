@@ -6,5 +6,11 @@ public enum StatBarSegmentKind
     Damage,
     Cold,
     Heat,
+    Poison,
+    Fall,
+    Suffocation,
+    Crushing,
+    Electricity,
+    Acid,
     Hunger,
 }

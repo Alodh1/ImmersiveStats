@@ -52,6 +52,24 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
         Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsMapper", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsServerVitalsTracker", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsDamageTrackerBehavior", throwOnError: false));
+
+        Type segmentKindType = assembly.GetType("ImmersiveStats.StatBarSegmentKind")
+            ?? throw new InvalidOperationException("StatBarSegmentKind type was not found.");
+        Assert.Contains("Poison", Enum.GetNames(segmentKindType));
+        Assert.Contains("Fall", Enum.GetNames(segmentKindType));
+        Assert.Contains("Suffocation", Enum.GetNames(segmentKindType));
+        Assert.Contains("Crushing", Enum.GetNames(segmentKindType));
+        Assert.Contains("Electricity", Enum.GetNames(segmentKindType));
+        Assert.Contains("Acid", Enum.GetNames(segmentKindType));
+
+        Type packetType = assembly.GetType("ImmersiveStats.Network.ImmersiveStatsVitalsPacket")
+            ?? throw new InvalidOperationException("ImmersiveStatsVitalsPacket type was not found.");
+        Assert.NotNull(packetType.GetProperty("PoisonReducer"));
+        Assert.NotNull(packetType.GetProperty("FallReducer"));
+        Assert.NotNull(packetType.GetProperty("SuffocationReducer"));
+        Assert.NotNull(packetType.GetProperty("CrushingReducer"));
+        Assert.NotNull(packetType.GetProperty("ElectricityReducer"));
+        Assert.NotNull(packetType.GetProperty("AcidReducer"));
     }
 
     private static Assembly GetImmersiveStatsAssembly()

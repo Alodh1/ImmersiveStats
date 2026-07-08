@@ -6,8 +6,10 @@ namespace ImmersiveStats.Client;
 internal sealed class ImmersiveStatsSettingsHud : HudElement
 {
     private const string ComposerKey = "immersivestats-settings";
-    private const double Width = 360;
-    private const double Height = 480;
+    private const double Width = 720;
+    private const double Height = 600;
+    private const double ColumnWidth = 338;
+    private const double RowHeight = 88;
 
     private readonly ImmersiveStatsClientConfig _config;
     private readonly Action _onConfigChanged;
@@ -56,15 +58,17 @@ internal sealed class ImmersiveStatsSettingsHud : HudElement
         double cursorY = 14;
         composer
             .AddStaticText("Debug mode", CairoFont.WhiteSmallText(), ElementBounds.Fixed(16, cursorY + 4, 200, 22))
-            .AddSwitch(OnDebugModeChanged, ElementBounds.Fixed(315, cursorY, 24, 24), "debugMode", 24, 3);
+            .AddSwitch(OnDebugModeChanged, ElementBounds.Fixed(675, cursorY, 24, 24), "debugMode", 24, 3);
         composer.GetSwitch("debugMode").SetValue(_config.DebugModeEnabled);
         cursorY += 38;
 
-        AddColorControls(composer, "Energy", StatBarSegmentKind.Energy, ref cursorY);
-        AddColorControls(composer, "Damage", StatBarSegmentKind.Damage, ref cursorY);
-        AddColorControls(composer, "Cold", StatBarSegmentKind.Cold, ref cursorY);
-        AddColorControls(composer, "Heat", StatBarSegmentKind.Heat, ref cursorY);
-        AddColorControls(composer, "Hunger", StatBarSegmentKind.Hunger, ref cursorY);
+        StatBarSegmentKind[] colorKinds = new[] { StatBarSegmentKind.Energy }.Concat(StatBarSegmentCatalog.ReducerKinds).ToArray();
+        for (int i = 0; i < colorKinds.Length; i++)
+        {
+            double controlX = 16 + (i % 2) * ColumnWidth;
+            double controlY = cursorY + (i / 2) * RowHeight;
+            AddColorControls(composer, StatBarSegmentCatalog.DisplayName(colorKinds[i]), colorKinds[i], controlX, controlY);
+        }
 
         Composers[ComposerKey] = composer.EndChildElements().Compose(false);
     }
@@ -75,25 +79,22 @@ internal sealed class ImmersiveStatsSettingsHud : HudElement
         base.Dispose();
     }
 
-    private void AddColorControls(GuiComposer composer, string label, StatBarSegmentKind kind, ref double cursorY)
+    private void AddColorControls(GuiComposer composer, string label, StatBarSegmentKind kind, double x, double y)
     {
         ImmersiveStatsRgbColor color = _config.GetColor(kind);
-        composer.AddStaticText(label, CairoFont.WhiteSmallText(), ElementBounds.Fixed(16, cursorY, 120, 20));
-        cursorY += 20;
-        AddColorSlider(composer, kind, "R", color.R, ref cursorY);
-        AddColorSlider(composer, kind, "G", color.G, ref cursorY);
-        AddColorSlider(composer, kind, "B", color.B, ref cursorY);
-        cursorY += 8;
+        composer.AddStaticText(label, CairoFont.WhiteSmallText(), ElementBounds.Fixed(x, y, 120, 18));
+        AddColorSlider(composer, kind, "R", color.R, x + 8, y + 20);
+        AddColorSlider(composer, kind, "G", color.G, x + 8, y + 42);
+        AddColorSlider(composer, kind, "B", color.B, x + 8, y + 64);
     }
 
-    private void AddColorSlider(GuiComposer composer, StatBarSegmentKind kind, string component, int value, ref double cursorY)
+    private void AddColorSlider(GuiComposer composer, StatBarSegmentKind kind, string component, int value, double x, double y)
     {
         string key = $"color-{kind}-{component}";
         composer
-            .AddStaticText(component, CairoFont.WhiteSmallText(), ElementBounds.Fixed(26, cursorY + 2, 20, 18))
-            .AddSlider(next => OnColorChanged(kind, component, next), ElementBounds.Fixed(52, cursorY, 286, 22), key);
+            .AddStaticText(component, CairoFont.WhiteSmallText(), ElementBounds.Fixed(x, y + 2, 20, 18))
+            .AddSlider(next => OnColorChanged(kind, component, next), ElementBounds.Fixed(x + 24, y, 284, 22), key);
         composer.GetSlider(key).SetValues(value, 0, 255, 1);
-        cursorY += 24;
     }
 
     private void OnDebugModeChanged(bool enabled)

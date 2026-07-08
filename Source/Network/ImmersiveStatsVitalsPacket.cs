@@ -31,6 +31,24 @@ public sealed class ImmersiveStatsVitalsPacket
     public float HeatReducer { get; set; }
 
     [ProtoMember(9)]
+    public float PoisonReducer { get; set; }
+
+    [ProtoMember(10)]
+    public float FallReducer { get; set; }
+
+    [ProtoMember(11)]
+    public float SuffocationReducer { get; set; }
+
+    [ProtoMember(12)]
+    public float CrushingReducer { get; set; }
+
+    [ProtoMember(13)]
+    public float ElectricityReducer { get; set; }
+
+    [ProtoMember(14)]
+    public float AcidReducer { get; set; }
+
+    [ProtoMember(15)]
     public float HungerReducer { get; set; }
 
     internal static ImmersiveStatsVitalsPacket FromSnapshot(ImmersiveStatsVitalsSnapshot snapshot)
@@ -45,6 +63,12 @@ public sealed class ImmersiveStatsVitalsPacket
             DamageReducer = snapshot.DamageReducer,
             ColdReducer = snapshot.ColdReducer,
             HeatReducer = snapshot.HeatReducer,
+            PoisonReducer = snapshot.PoisonReducer,
+            FallReducer = snapshot.FallReducer,
+            SuffocationReducer = snapshot.SuffocationReducer,
+            CrushingReducer = snapshot.CrushingReducer,
+            ElectricityReducer = snapshot.ElectricityReducer,
+            AcidReducer = snapshot.AcidReducer,
             HungerReducer = snapshot.HungerReducer,
         };
     }
@@ -60,6 +84,12 @@ public sealed class ImmersiveStatsVitalsPacket
             DamageReducer,
             ColdReducer,
             HeatReducer,
+            PoisonReducer,
+            FallReducer,
+            SuffocationReducer,
+            CrushingReducer,
+            ElectricityReducer,
+            AcidReducer,
             HungerReducer);
     }
 }

@@ -4,9 +4,9 @@ internal sealed class ImmersiveStatsClientConfig
 {
     public const string FileName = "immersivestats.client.json";
     public const double DefaultBarWidth = 440;
-    public const double DefaultBarHeight = 58;
+    public const double DefaultBarHeight = 96;
     public const double MinimumBarWidth = 160;
-    public const double MinimumBarHeight = 36;
+    public const double MinimumBarHeight = 72;
     public const int MaximumDebugValue = 100;
 
     public double? BarX { get; set; }
@@ -25,6 +25,18 @@ internal sealed class ImmersiveStatsClientConfig
 
     public int DebugHeat { get; set; } = 6;
 
+    public int DebugPoison { get; set; } = 0;
+
+    public int DebugFall { get; set; } = 0;
+
+    public int DebugSuffocation { get; set; } = 0;
+
+    public int DebugCrushing { get; set; } = 0;
+
+    public int DebugElectricity { get; set; } = 0;
+
+    public int DebugAcid { get; set; } = 0;
+
     public int DebugHunger { get; set; } = 22;
 
     public ImmersiveStatsRgbColor? EnergyColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(71, 179, 33);
@@ -34,6 +46,18 @@ internal sealed class ImmersiveStatsClientConfig
     public ImmersiveStatsRgbColor? ColdColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(82, 133, 242);
 
     public ImmersiveStatsRgbColor? HeatColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(242, 140, 31);
+
+    public ImmersiveStatsRgbColor? PoisonColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(86, 184, 69);
+
+    public ImmersiveStatsRgbColor? FallColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(194, 182, 154);
+
+    public ImmersiveStatsRgbColor? SuffocationColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(67, 188, 204);
+
+    public ImmersiveStatsRgbColor? CrushingColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(130, 125, 116);
+
+    public ImmersiveStatsRgbColor? ElectricityColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(247, 213, 65);
+
+    public ImmersiveStatsRgbColor? AcidColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(137, 225, 85);
 
     public ImmersiveStatsRgbColor? HungerColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(161, 56, 217);
 
@@ -56,12 +80,24 @@ internal sealed class ImmersiveStatsClientConfig
         DebugDamage = ClampDebugValue(DebugDamage);
         DebugCold = ClampDebugValue(DebugCold);
         DebugHeat = ClampDebugValue(DebugHeat);
+        DebugPoison = ClampDebugValue(DebugPoison);
+        DebugFall = ClampDebugValue(DebugFall);
+        DebugSuffocation = ClampDebugValue(DebugSuffocation);
+        DebugCrushing = ClampDebugValue(DebugCrushing);
+        DebugElectricity = ClampDebugValue(DebugElectricity);
+        DebugAcid = ClampDebugValue(DebugAcid);
         DebugHunger = ClampDebugValue(DebugHunger);
 
         EnergyColor = NormalizeColor(EnergyColor, 71, 179, 33);
         DamageColor = NormalizeColor(DamageColor, 230, 51, 41);
         ColdColor = NormalizeColor(ColdColor, 82, 133, 242);
         HeatColor = NormalizeColor(HeatColor, 242, 140, 31);
+        PoisonColor = NormalizeColor(PoisonColor, 86, 184, 69);
+        FallColor = NormalizeColor(FallColor, 194, 182, 154);
+        SuffocationColor = NormalizeColor(SuffocationColor, 67, 188, 204);
+        CrushingColor = NormalizeColor(CrushingColor, 130, 125, 116);
+        ElectricityColor = NormalizeColor(ElectricityColor, 247, 213, 65);
+        AcidColor = NormalizeColor(AcidColor, 137, 225, 85);
         HungerColor = NormalizeColor(HungerColor, 161, 56, 217);
     }
 
@@ -80,7 +116,19 @@ internal sealed class ImmersiveStatsClientConfig
 
     public StatBarState ToState()
     {
-        return new StatBarState(StatBarLayout.DefaultCapacity, DebugDamage, DebugCold, DebugHeat, DebugHunger);
+        return new StatBarState(StatBarLayout.DefaultCapacity, new Dictionary<StatBarSegmentKind, float>
+        {
+            [StatBarSegmentKind.Damage] = DebugDamage,
+            [StatBarSegmentKind.Cold] = DebugCold,
+            [StatBarSegmentKind.Heat] = DebugHeat,
+            [StatBarSegmentKind.Poison] = DebugPoison,
+            [StatBarSegmentKind.Fall] = DebugFall,
+            [StatBarSegmentKind.Suffocation] = DebugSuffocation,
+            [StatBarSegmentKind.Crushing] = DebugCrushing,
+            [StatBarSegmentKind.Electricity] = DebugElectricity,
+            [StatBarSegmentKind.Acid] = DebugAcid,
+            [StatBarSegmentKind.Hunger] = DebugHunger,
+        });
     }
 
     public ImmersiveStatsRgbColor GetColor(StatBarSegmentKind kind)
@@ -91,6 +139,12 @@ internal sealed class ImmersiveStatsClientConfig
             StatBarSegmentKind.Damage => DamageColor ?? ImmersiveStatsRgbColor.FromRgb(230, 51, 41),
             StatBarSegmentKind.Cold => ColdColor ?? ImmersiveStatsRgbColor.FromRgb(82, 133, 242),
             StatBarSegmentKind.Heat => HeatColor ?? ImmersiveStatsRgbColor.FromRgb(242, 140, 31),
+            StatBarSegmentKind.Poison => PoisonColor ?? ImmersiveStatsRgbColor.FromRgb(86, 184, 69),
+            StatBarSegmentKind.Fall => FallColor ?? ImmersiveStatsRgbColor.FromRgb(194, 182, 154),
+            StatBarSegmentKind.Suffocation => SuffocationColor ?? ImmersiveStatsRgbColor.FromRgb(67, 188, 204),
+            StatBarSegmentKind.Crushing => CrushingColor ?? ImmersiveStatsRgbColor.FromRgb(130, 125, 116),
+            StatBarSegmentKind.Electricity => ElectricityColor ?? ImmersiveStatsRgbColor.FromRgb(247, 213, 65),
+            StatBarSegmentKind.Acid => AcidColor ?? ImmersiveStatsRgbColor.FromRgb(137, 225, 85),
             StatBarSegmentKind.Hunger => HungerColor ?? ImmersiveStatsRgbColor.FromRgb(161, 56, 217),
             _ => ImmersiveStatsRgbColor.FromRgb(204, 204, 204),
         };
@@ -113,6 +167,24 @@ internal sealed class ImmersiveStatsClientConfig
             case StatBarSegmentKind.Heat:
                 HeatColor = color;
                 break;
+            case StatBarSegmentKind.Poison:
+                PoisonColor = color;
+                break;
+            case StatBarSegmentKind.Fall:
+                FallColor = color;
+                break;
+            case StatBarSegmentKind.Suffocation:
+                SuffocationColor = color;
+                break;
+            case StatBarSegmentKind.Crushing:
+                CrushingColor = color;
+                break;
+            case StatBarSegmentKind.Electricity:
+                ElectricityColor = color;
+                break;
+            case StatBarSegmentKind.Acid:
+                AcidColor = color;
+                break;
             case StatBarSegmentKind.Hunger:
                 HungerColor = color;
                 break;
@@ -126,6 +198,12 @@ internal sealed class ImmersiveStatsClientConfig
             StatBarSegmentKind.Damage => DebugDamage,
             StatBarSegmentKind.Cold => DebugCold,
             StatBarSegmentKind.Heat => DebugHeat,
+            StatBarSegmentKind.Poison => DebugPoison,
+            StatBarSegmentKind.Fall => DebugFall,
+            StatBarSegmentKind.Suffocation => DebugSuffocation,
+            StatBarSegmentKind.Crushing => DebugCrushing,
+            StatBarSegmentKind.Electricity => DebugElectricity,
+            StatBarSegmentKind.Acid => DebugAcid,
             StatBarSegmentKind.Hunger => DebugHunger,
             _ => 0,
         };
@@ -144,6 +222,24 @@ internal sealed class ImmersiveStatsClientConfig
                 break;
             case StatBarSegmentKind.Heat:
                 DebugHeat = value;
+                break;
+            case StatBarSegmentKind.Poison:
+                DebugPoison = value;
+                break;
+            case StatBarSegmentKind.Fall:
+                DebugFall = value;
+                break;
+            case StatBarSegmentKind.Suffocation:
+                DebugSuffocation = value;
+                break;
+            case StatBarSegmentKind.Crushing:
+                DebugCrushing = value;
+                break;
+            case StatBarSegmentKind.Electricity:
+                DebugElectricity = value;
+                break;
+            case StatBarSegmentKind.Acid:
+                DebugAcid = value;
                 break;
             case StatBarSegmentKind.Hunger:
                 DebugHunger = value;

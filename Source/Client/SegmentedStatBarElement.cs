@@ -8,9 +8,9 @@ namespace ImmersiveStats.Client;
 internal sealed class SegmentedStatBarElement : GuiElement
 {
     private const double BarX = 8;
-    private const double BarY = 24;
-    private const double BarHeight = 16;
-    private const double Radius = 4;
+    private const double BarHeight = 48;
+    private const double IconSize = 28;
+    private const double Radius = 5;
 
     private readonly ImmersiveStatsClientConfig _config;
     private StatBarState _state;
@@ -85,8 +85,8 @@ internal sealed class SegmentedStatBarElement : GuiElement
 
         double scale = RuntimeEnv.GUIScale;
         double barX = BarX * scale;
-        double barY = BarY * scale;
-        double barHeight = BarHeight * scale;
+        double barHeight = Math.Min(BarHeight * scale, Math.Max(1, height - 12 * scale));
+        double barY = Math.Max(0, (height - barHeight) / 2);
         double barWidth = Math.Max(1, width - (BarX * 2 * scale));
         double radius = Radius * scale;
 
@@ -99,6 +99,8 @@ internal sealed class SegmentedStatBarElement : GuiElement
         }
 
         DrawDividers(ctx, layout, barX, barY, barWidth, barHeight);
+        DrawTickMarks(ctx, barX, barY, barWidth, barHeight, scale);
+        DrawSegmentIcons(ctx, layout, barX, barY, barWidth, barHeight, scale);
 
         if (_editMode)
         {
@@ -182,6 +184,39 @@ internal sealed class SegmentedStatBarElement : GuiElement
             ctx.MoveTo(x, barY + 3);
             ctx.LineTo(x, barY + barHeight - 3);
             ctx.Stroke();
+        }
+    }
+
+    private static void DrawTickMarks(Context ctx, double barX, double barY, double barWidth, double barHeight, double scale)
+    {
+        ctx.LineWidth = Math.Max(1, scale);
+
+        for (int percent = 5; percent < 100; percent += 5)
+        {
+            double x = barX + barWidth * percent / 100.0;
+            double alpha = percent % 25 == 0 ? 0.42 : 0.26;
+            ctx.SetSourceRGBA(0, 0, 0, alpha);
+            ctx.MoveTo(x, barY + 4 * scale);
+            ctx.LineTo(x, barY + barHeight - 4 * scale);
+            ctx.Stroke();
+            ctx.SetSourceRGBA(1, 1, 1, alpha * 0.28);
+            ctx.MoveTo(x + scale, barY + 5 * scale);
+            ctx.LineTo(x + scale, barY + barHeight - 5 * scale);
+            ctx.Stroke();
+        }
+    }
+
+    private static void DrawSegmentIcons(Context ctx, StatBarLayoutResult layout, double barX, double barY, double barWidth, double barHeight, double scale)
+    {
+        double iconSize = Math.Min(IconSize * scale, Math.Max(1, barHeight - 10 * scale));
+        double centerY = barY + barHeight / 2;
+
+        foreach (StatBarSegment segment in layout.Segments)
+        {
+            double start = barX + barWidth * segment.StartFraction;
+            double end = barX + barWidth * segment.EndFraction;
+            double width = Math.Max(0, end - start);
+            SegmentIconRenderer.Draw(ctx, segment.Kind, start + width / 2, centerY, iconSize, width, scale);
         }
     }
 
