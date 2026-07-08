@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>immersivestats</AssemblyName>
+    <RootNamespace>ImmersiveStats</RootNamespace>
+    <ModId>immersivestats</ModId>
+    <ModName>Immersive Stats</ModName>
+    <ModVersion>0.1.0</ModVersion>
+    <ModType>code</ModType>
+    <ModSide>universal</ModSide>
+    <RequiredOnClient>true</RequiredOnClient>
+    <RequiredOnServer>false</RequiredOnServer>
+    <Description>Prototype combined stat bar HUD.</Description>
+    <OutputPath>bin\$(Configuration)\Mods\$(ModId)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ModInfoAuthors Include="Alodh" />
+    <Dependencies Include="game" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="VintagestoryAPI" HintPath="$(GameDirectory)\VintagestoryAPI.dll" Private="false" />
+    <Reference Include="VintagestoryLib" HintPath="$(GameDirectory)\VintagestoryLib.dll" Private="false" />
+    <Reference Include="cairo-sharp" HintPath="$(GameDirectory)\Lib\cairo-sharp.dll" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CheckGameDirectory" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GameDirectory)' == '' or !Exists('$(GameDirectory)\VintagestoryAPI.dll')" Text="GameDirectory must point at a Vintage Story install containing VintagestoryAPI.dll. Set VINTAGE_STORY or pass -p:GameDirectory=..." />
+  </Target>
+
+  <Target Name="PrepareModOutput" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <ModInfo>
+{
+  "type": "$(ModType)",
+  "name": "$(ModName)",
+  "modid": "$(ModId)",
+  "version": "$(ModVersion)",
+  "description": "$(Description)",
+  "authors": [ @(ModInfoAuthors->'"%(Identity)"', ', ') ],
+  "dependencies": {
+    @(Dependencies->'"%(Identity)": "%(Version)"', ', ')
+  },
+  "side": "$(ModSide)",
+  "requiredOnClient": $(RequiredOnClient),
+  "requiredOnServer": $(RequiredOnServer)
+}
+      </ModInfo>
+    </PropertyGroup>
+    <RemoveDir Directories="$(OutputPath)" />
+    <MakeDir Directories="$(OutputPath)" />
+    <WriteLinesToFile File="$(OutputPath)modinfo.json" Lines="$(ModInfo)" Overwrite="true" />
+  </Target>
+
+  <Target Name="PackageMod" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <MakeDir Directories="$(ReleasesDir)" />
+    <Delete Files="$(ReleasePath)" Condition="'$(ReleasePath)' != ''" />
+    <ZipDirectory SourceDirectory="$(OutputPath)" DestinationFile="$(ReleasePath)" />
+    <Message Text="Packaged $(ReleasePath)" Importance="high" />
+  </Target>
+
+</Project>

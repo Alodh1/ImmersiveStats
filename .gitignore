@@ -1,0 +1,11 @@
+bin/
+obj/
+release/
+Releases/
+_pack/
+.vs/
+.vscode/
+*.user
+*.suo
+*.nupkg
+Properties/localSettings.props
