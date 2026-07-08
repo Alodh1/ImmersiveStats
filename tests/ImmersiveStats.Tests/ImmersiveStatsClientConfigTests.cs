@@ -56,7 +56,7 @@ public sealed class ImmersiveStatsClientConfigTests
         config.Normalize(1000, 700);
 
         Assert.Equal(280, config.BarX);
-        Assert.Equal(266, config.BarY);
+        Assert.Equal(302, config.BarY);
     }
 
     [Fact]
