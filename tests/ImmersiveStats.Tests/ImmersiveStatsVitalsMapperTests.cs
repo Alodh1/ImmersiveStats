@@ -1,5 +1,6 @@
 using ImmersiveStats.Client;
 using ImmersiveStats.Stats;
+using Vintagestory.API.Common;
 using Xunit;
 
 namespace ImmersiveStats.Tests;
@@ -48,6 +49,45 @@ public sealed class ImmersiveStatsVitalsMapperTests
     }
 
     [Fact]
+    public void CategorizedHealthLossMapsToSeparateReducers()
+    {
+        ImmersiveStatsVitalsSnapshot snapshot = ImmersiveStatsVitalsMapper.CreateCategorizedSnapshot(
+            currentHealth: 50,
+            maxHealth: 100,
+            currentSaturation: 100,
+            maxSaturation: 100,
+            damageHealthPoints: 10,
+            coldHealthPoints: 15,
+            heatHealthPoints: 20,
+            hungerHealthPoints: 5);
+
+        StatBarState state = ImmersiveStatsVitalsMapper.ToStatBarState(snapshot);
+
+        AssertClose(10, state.Damage);
+        AssertClose(15, state.Cold);
+        AssertClose(20, state.Heat);
+        AssertClose(5, state.Hunger);
+    }
+
+    [Fact]
+    public void HealthHungerAndMissingSaturationShareHungerReducer()
+    {
+        ImmersiveStatsVitalsSnapshot snapshot = ImmersiveStatsVitalsMapper.CreateCategorizedSnapshot(
+            currentHealth: 90,
+            maxHealth: 100,
+            currentSaturation: 50,
+            maxSaturation: 100,
+            damageHealthPoints: 0,
+            coldHealthPoints: 0,
+            heatHealthPoints: 0,
+            hungerHealthPoints: 10);
+
+        StatBarState state = ImmersiveStatsVitalsMapper.ToStatBarState(snapshot);
+
+        AssertClose(60, state.Hunger);
+    }
+
+    [Fact]
     public void CombinedReducersStillUseLayoutCapacityClamping()
     {
         StatBarState state = ToState(currentHealth: 0, maxHealth: 100, currentSaturation: 0, maxSaturation: 100);
@@ -56,6 +96,50 @@ public sealed class ImmersiveStatsVitalsMapperTests
         AssertClose(0, layout.EnergyAmount);
         Assert.Equal([StatBarSegmentKind.Damage], layout.Segments.Select(segment => segment.Kind).ToArray());
         AssertClose(100, layout.Segments[0].RenderedAmount);
+    }
+
+    [Theory]
+    [InlineData(EnumDamageType.Frost, StatBarSegmentKind.Cold)]
+    [InlineData(EnumDamageType.Fire, StatBarSegmentKind.Heat)]
+    [InlineData(EnumDamageType.Heat, StatBarSegmentKind.Heat)]
+    [InlineData(EnumDamageType.Hunger, StatBarSegmentKind.Hunger)]
+    [InlineData(EnumDamageType.Poison, StatBarSegmentKind.Damage)]
+    [InlineData(EnumDamageType.Gravity, StatBarSegmentKind.Damage)]
+    public void DamageTypesClassifyIntoHudSegments(EnumDamageType damageType, StatBarSegmentKind expected)
+    {
+        var source = new DamageSource
+        {
+            Source = EnumDamageSource.Fall,
+            Type = damageType,
+        };
+
+        Assert.Equal(expected, ImmersiveStatsDamageSourceClassifier.Classify(source));
+    }
+
+    [Fact]
+    public void BucketsReconcileHealingProportionally()
+    {
+        var buckets = new ImmersiveStatsDamageBuckets();
+        buckets.Add(StatBarSegmentKind.Damage, 10);
+        buckets.Add(StatBarSegmentKind.Cold, 30);
+
+        buckets.ReconcileToMissingHealth(20);
+
+        AssertClose(5, buckets.Damage);
+        AssertClose(15, buckets.Cold);
+    }
+
+    [Fact]
+    public void BucketsAssignUnknownExistingMissingHealthToDamage()
+    {
+        var buckets = new ImmersiveStatsDamageBuckets();
+
+        buckets.ReconcileToMissingHealth(12);
+
+        AssertClose(12, buckets.Damage);
+        AssertClose(0, buckets.Cold);
+        AssertClose(0, buckets.Heat);
+        AssertClose(0, buckets.Hunger);
     }
 
     [Fact]

@@ -46,9 +46,12 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
         Assembly assembly = GetImmersiveStatsAssembly();
 
         Assert.NotNull(assembly.GetType("ImmersiveStats.Network.ImmersiveStatsEditModePacket"));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Network.ImmersiveStatsVitalsPacket"));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Commands.ImmersiveStatsCommandParser", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsSnapshot", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsMapper", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsServerVitalsTracker", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsDamageTrackerBehavior", throwOnError: false));
     }
 
     private static Assembly GetImmersiveStatsAssembly()

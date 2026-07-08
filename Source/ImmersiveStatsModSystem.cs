@@ -2,6 +2,7 @@ using ImmersiveStats.Client;
 using ImmersiveStats.Commands;
 using ImmersiveStats.Debug;
 using ImmersiveStats.Network;
+using ImmersiveStats.Server;
 using ImmersiveStats.Stats;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -16,6 +17,8 @@ public sealed class ImmersiveStatsModSystem : ModSystem
     private readonly DebugStatBarState _debugState = new();
     private ImmersiveStatsClientConfig? _clientConfig;
     private ImmersiveStatsHud? _hud;
+    private NetworkedVitalsSource? _clientVitalsSource;
+    private ImmersiveStatsServerVitalsTracker? _serverVitalsTracker;
     private IClientNetworkChannel? _clientChannel;
     private IServerNetworkChannel? _serverChannel;
 
@@ -23,14 +26,16 @@ public sealed class ImmersiveStatsModSystem : ModSystem
     {
         _clientConfig = LoadClientConfig(api);
         _debugState.Current = _clientConfig.DebugModeEnabled ? _clientConfig.ToState() : StatBarState.Empty;
-        IImmersiveStatsVitalsSource vitalsSource = new WatchedAttributeVitalsSource(api);
+        _clientVitalsSource = new NetworkedVitalsSource(new WatchedAttributeVitalsSource(api));
 
         _clientChannel = api.Network
             .RegisterChannel(NetworkChannelName)
             .RegisterMessageType<ImmersiveStatsEditModePacket>()
-            .SetMessageHandler<ImmersiveStatsEditModePacket>(OnEditModePacket);
+            .RegisterMessageType<ImmersiveStatsVitalsPacket>();
+        _clientChannel.SetMessageHandler<ImmersiveStatsEditModePacket>(OnEditModePacket);
+        _clientChannel.SetMessageHandler<ImmersiveStatsVitalsPacket>(OnVitalsPacket);
 
-        _hud = new ImmersiveStatsHud(api, _debugState, _clientConfig, vitalsSource, new VanillaStatbarSuppressor(api), () => SaveClientConfig(api));
+        _hud = new ImmersiveStatsHud(api, _debugState, _clientConfig, _clientVitalsSource, new VanillaStatbarSuppressor(api), () => SaveClientConfig(api));
         _hud.TryOpen(false);
         RegisterClientFallbackCommand(api);
     }
@@ -39,15 +44,21 @@ public sealed class ImmersiveStatsModSystem : ModSystem
     {
         _serverChannel = api.Network
             .RegisterChannel(NetworkChannelName)
-            .RegisterMessageType<ImmersiveStatsEditModePacket>();
+            .RegisterMessageType<ImmersiveStatsEditModePacket>()
+            .RegisterMessageType<ImmersiveStatsVitalsPacket>();
+        _serverVitalsTracker = new ImmersiveStatsServerVitalsTracker(api, _serverChannel);
+        _serverVitalsTracker.Start();
 
         RegisterServerCommand(api);
     }
 
     public override void Dispose()
     {
+        _serverVitalsTracker?.Dispose();
         _hud?.Dispose();
         _hud = null;
+        _clientVitalsSource = null;
+        _serverVitalsTracker = null;
         _clientChannel = null;
         _serverChannel = null;
         _clientConfig = null;
@@ -128,6 +139,11 @@ public sealed class ImmersiveStatsModSystem : ModSystem
     private void OnEditModePacket(ImmersiveStatsEditModePacket packet)
     {
         _hud?.ApplyEditModePacket(packet);
+    }
+
+    private void OnVitalsPacket(ImmersiveStatsVitalsPacket packet)
+    {
+        _clientVitalsSource?.Apply(packet);
     }
 
     private static string GetRawCommandArgument(TextCommandCallingArgs args)

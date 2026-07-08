@@ -7,4 +7,6 @@ internal readonly record struct ImmersiveStatsVitalsSnapshot(
     float MaxSaturation,
     float Capacity,
     float DamageReducer,
+    float ColdReducer,
+    float HeatReducer,
     float HungerReducer);
