@@ -1,139 +1,165 @@
-using System.Globalization;
-using System.Text;
 using ImmersiveStats.Client;
+using ImmersiveStats.Commands;
 using ImmersiveStats.Debug;
+using ImmersiveStats.Network;
+using ImmersiveStats.Stats;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Server;
 
 namespace ImmersiveStats;
 
 public sealed class ImmersiveStatsModSystem : ModSystem
 {
+    private const string NetworkChannelName = "immersivestats";
+
     private readonly DebugStatBarState _debugState = new();
+    private ImmersiveStatsClientConfig? _clientConfig;
     private ImmersiveStatsHud? _hud;
+    private IClientNetworkChannel? _clientChannel;
+    private IServerNetworkChannel? _serverChannel;
 
     public override void StartClientSide(ICoreClientAPI api)
     {
-        _hud = new ImmersiveStatsHud(api, _debugState);
+        _clientConfig = LoadClientConfig(api);
+        _debugState.Current = _clientConfig.DebugModeEnabled ? _clientConfig.ToState() : StatBarState.Empty;
+        IImmersiveStatsVitalsSource vitalsSource = new WatchedAttributeVitalsSource(api);
+
+        _clientChannel = api.Network
+            .RegisterChannel(NetworkChannelName)
+            .RegisterMessageType<ImmersiveStatsEditModePacket>()
+            .SetMessageHandler<ImmersiveStatsEditModePacket>(OnEditModePacket);
+
+        _hud = new ImmersiveStatsHud(api, _debugState, _clientConfig, vitalsSource, new VanillaStatbarSuppressor(api), () => SaveClientConfig(api));
         _hud.TryOpen(false);
-        RegisterCommands(api);
+        RegisterClientFallbackCommand(api);
+    }
+
+    public override void StartServerSide(ICoreServerAPI api)
+    {
+        _serverChannel = api.Network
+            .RegisterChannel(NetworkChannelName)
+            .RegisterMessageType<ImmersiveStatsEditModePacket>();
+
+        RegisterServerCommand(api);
     }
 
     public override void Dispose()
     {
         _hud?.Dispose();
         _hud = null;
+        _clientChannel = null;
+        _serverChannel = null;
+        _clientConfig = null;
         base.Dispose();
     }
 
-    private void RegisterCommands(ICoreClientAPI api)
+    private static ImmersiveStatsClientConfig LoadClientConfig(ICoreClientAPI api)
     {
-        var parsers = api.ChatCommands.Parsers;
-
-        api.ChatCommands.Create("immersivestats")
-            .WithDescription("Immersive Stats prototype HUD controls.")
-            .HandleWith(_ => TextCommandResult.Success(BuildStatusMessage(_debugState.Current)))
-            .BeginSubCommand("set")
-                .WithDescription("Set debug reducer values. Example: /immersivestats set damage 20 cold 5 heat 0 hunger 15")
-                .WithArgs(parsers.OptionalAll("name value pairs"))
-                .HandleWith(OnSetCommand)
-            .EndSubCommand();
+        ImmersiveStatsClientConfig config = api.LoadModConfig<ImmersiveStatsClientConfig>(ImmersiveStatsClientConfig.FileName)
+            ?? new ImmersiveStatsClientConfig();
+        config.Normalize(GetViewportWidth(api), GetViewportHeight(api));
+        api.StoreModConfig(config, ImmersiveStatsClientConfig.FileName);
+        return config;
     }
 
-    private TextCommandResult OnSetCommand(TextCommandCallingArgs args)
+    private void SaveClientConfig(ICoreClientAPI api)
     {
-        string raw = args.Parsers?.Count > 0
-            ? args.Parsers[0].GetValue()?.ToString() ?? string.Empty
-            : string.Empty;
-
-        if (string.IsNullOrWhiteSpace(raw))
+        if (_clientConfig is null)
         {
-            return TextCommandResult.Success(BuildStatusMessage(_debugState.Current));
+            return;
         }
 
-        if (!TryApplyPairs(_debugState.Current, raw, out StatBarState next, out string error))
+        _clientConfig.Normalize(GetViewportWidth(api), GetViewportHeight(api));
+        api.StoreModConfig(_clientConfig, ImmersiveStatsClientConfig.FileName);
+    }
+
+    private void RegisterClientFallbackCommand(ICoreClientAPI api)
+    {
+        api.ChatCommands.GetOrCreate("immersivestats")
+            .WithDescription("Toggle Immersive Stats HUD edit mode. Use /immersivestats on servers that load the mod server-side.")
+            .RequiresPrivilege(Privilege.chat)
+            .WithArgs(api.ChatCommands.Parsers.OptionalAll("on|off"))
+            .HandleWith(HandleClientCommand);
+    }
+
+    private void RegisterServerCommand(ICoreServerAPI api)
+    {
+        api.ChatCommands.GetOrCreate("immersivestats")
+            .WithDescription("Toggle Immersive Stats HUD edit mode for your client.")
+            .RequiresPlayer()
+            .RequiresPrivilege(Privilege.chat)
+            .WithArgs(api.ChatCommands.Parsers.OptionalAll("on|off"))
+            .HandleWith(HandleServerCommand);
+    }
+
+    private TextCommandResult HandleClientCommand(TextCommandCallingArgs args)
+    {
+        if (!ImmersiveStatsCommandParser.TryParse(GetRawCommandArgument(args), out ImmersiveStatsEditCommand command, out string error))
         {
             return TextCommandResult.Error(error);
         }
 
-        _debugState.Current = next;
-        return TextCommandResult.Success(BuildStatusMessage(next));
+        if (_hud is null)
+        {
+            return TextCommandResult.Error("Immersive Stats HUD is not available.");
+        }
+
+        bool enabled = _hud.ApplyEditModeCommand(command);
+        return TextCommandResult.Success($"Immersive Stats edit mode {(enabled ? "enabled" : "disabled")}.");
     }
 
-    private static bool TryApplyPairs(StatBarState current, string raw, out StatBarState next, out string error)
+    private TextCommandResult HandleServerCommand(TextCommandCallingArgs args)
     {
-        next = current;
-        error = string.Empty;
-
-        string[] tokens = raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Length % 2 != 0)
+        if (!ImmersiveStatsCommandParser.TryParse(GetRawCommandArgument(args), out ImmersiveStatsEditCommand command, out string error))
         {
-            error = "Expected name/value pairs, e.g. damage 20 cold 5 heat 0 hunger 15.";
-            return false;
+            return TextCommandResult.Error(error);
         }
 
-        float damage = current.Damage;
-        float cold = current.Cold;
-        float heat = current.Heat;
-        float hunger = current.Hunger;
-
-        for (int i = 0; i < tokens.Length; i += 2)
+        if (args.Caller.Player is not IServerPlayer player)
         {
-            string name = tokens[i].ToLowerInvariant();
-            string rawValue = tokens[i + 1];
-
-            if (!float.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ||
-                float.IsNaN(value) ||
-                float.IsInfinity(value) ||
-                value < 0)
-            {
-                error = $"Value for '{tokens[i]}' must be a non-negative number.";
-                return false;
-            }
-
-            switch (name)
-            {
-                case "damage":
-                case "dmg":
-                    damage = value;
-                    break;
-                case "cold":
-                    cold = value;
-                    break;
-                case "heat":
-                    heat = value;
-                    break;
-                case "hunger":
-                case "hun":
-                    hunger = value;
-                    break;
-                default:
-                    error = $"Unknown reducer '{tokens[i]}'. Expected damage, cold, heat, or hunger.";
-                    return false;
-            }
+            return TextCommandResult.Error("Immersive Stats edit mode can only be toggled by a player.");
         }
 
-        next = current with
+        _serverChannel?.SendPacket(ToPacket(command), player);
+        return TextCommandResult.Success(DescribeServerRequest(command));
+    }
+
+    private void OnEditModePacket(ImmersiveStatsEditModePacket packet)
+    {
+        _hud?.ApplyEditModePacket(packet);
+    }
+
+    private static string GetRawCommandArgument(TextCommandCallingArgs args)
+    {
+        return args.Parsers.Count > 0
+            ? args[0]?.ToString() ?? string.Empty
+            : string.Empty;
+    }
+
+    private static ImmersiveStatsEditModePacket ToPacket(ImmersiveStatsEditCommand command)
+    {
+        return new ImmersiveStatsEditModePacket
         {
-            Damage = damage,
-            Cold = cold,
-            Heat = heat,
-            Hunger = hunger,
+            HasExplicitState = command.Kind == ImmersiveStatsEditCommandKind.Set,
+            Enabled = command.Enabled,
         };
-        return true;
     }
 
-    private static string BuildStatusMessage(StatBarState state)
+    private static string DescribeServerRequest(ImmersiveStatsEditCommand command)
     {
-        StatBarLayoutResult layout = StatBarLayout.Calculate(state);
-        var builder = new StringBuilder();
-        builder.Append(CultureInfo.InvariantCulture, $"Energy {layout.EnergyAmount:0.##}/{layout.Capacity:0.##}");
+        return command.Kind == ImmersiveStatsEditCommandKind.Toggle
+            ? "Immersive Stats edit mode toggle sent."
+            : $"Immersive Stats edit mode {(command.Enabled ? "enable" : "disable")} sent.";
+    }
 
-        foreach (StatBarSegment segment in layout.Segments.Where(segment => segment.Kind != StatBarSegmentKind.Energy))
-        {
-            builder.Append(CultureInfo.InvariantCulture, $", {segment.Kind.ToString().ToLowerInvariant()} {segment.RenderedAmount:0.##}/{segment.RequestedAmount:0.##}");
-        }
+    private static double GetViewportWidth(ICoreClientAPI api)
+    {
+        return api.Render.FrameWidth > 0 ? api.Render.FrameWidth / Vintagestory.API.Config.RuntimeEnv.GUIScale : 1280;
+    }
 
-        return builder.ToString();
+    private static double GetViewportHeight(ICoreClientAPI api)
+    {
+        return api.Render.FrameHeight > 0 ? api.Render.FrameHeight / Vintagestory.API.Config.RuntimeEnv.GUIScale : 720;
     }
 }

@@ -11,9 +11,7 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
     {
         await World.Ticks(2);
 
-        Assembly assembly = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(candidate => candidate.GetName().Name == "immersivestats")
-            ?? throw new InvalidOperationException("The immersivestats assembly was not loaded by Atlas.");
+        Assembly assembly = GetImmersiveStatsAssembly();
 
         Type stateType = assembly.GetType("ImmersiveStats.StatBarState")
             ?? throw new InvalidOperationException("StatBarState type was not found.");
@@ -38,6 +36,26 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
         var segments = ((System.Collections.IEnumerable)segmentsValue).Cast<object>().ToArray();
 
         Assert.Equal(["Energy", "Damage", "Hunger"], segments.Select(GetKindName).ToArray());
+    }
+
+    [AtlasScenario(TimeoutMs = 120000)]
+    public async Task ServerCommandRegistration_Should_LoadWithoutCrash()
+    {
+        await World.Ticks(2);
+
+        Assembly assembly = GetImmersiveStatsAssembly();
+
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Network.ImmersiveStatsEditModePacket"));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Commands.ImmersiveStatsCommandParser", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsSnapshot", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsMapper", throwOnError: false));
+    }
+
+    private static Assembly GetImmersiveStatsAssembly()
+    {
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(candidate => candidate.GetName().Name == "immersivestats")
+            ?? throw new InvalidOperationException("The immersivestats assembly was not loaded by Atlas.");
     }
 
     private static string GetKindName(object segment)

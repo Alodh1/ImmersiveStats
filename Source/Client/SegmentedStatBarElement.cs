@@ -12,13 +12,16 @@ internal sealed class SegmentedStatBarElement : GuiElement
     private const double BarHeight = 16;
     private const double Radius = 4;
 
+    private readonly ImmersiveStatsClientConfig _config;
     private StatBarState _state;
+    private bool _editMode;
     private int _textureId;
 
-    public SegmentedStatBarElement(ICoreClientAPI capi, ElementBounds bounds, StatBarState state)
+    public SegmentedStatBarElement(ICoreClientAPI capi, ElementBounds bounds, StatBarState state, ImmersiveStatsClientConfig config)
         : base(capi, bounds)
     {
         _state = state;
+        _config = config;
     }
 
     public void SetState(StatBarState state)
@@ -26,6 +29,19 @@ internal sealed class SegmentedStatBarElement : GuiElement
         _state = state;
         Redraw();
     }
+
+    public void SetEditMode(bool editMode)
+    {
+        if (_editMode == editMode)
+        {
+            return;
+        }
+
+        _editMode = editMode;
+        Redraw();
+    }
+
+    public void RefreshStyle() => Redraw();
 
     public override void ComposeElements(Context ctxStatic, ImageSurface surfaceStatic)
     {
@@ -83,7 +99,11 @@ internal sealed class SegmentedStatBarElement : GuiElement
         }
 
         DrawDividers(ctx, layout, barX, barY, barWidth, barHeight);
-        DrawLabels(ctx, layout, barX, barY, barWidth, scale);
+
+        if (_editMode)
+        {
+            DrawEditChrome(ctx, width, height, scale);
+        }
 
         generateTexture(surface, ref _textureId);
     }
@@ -102,7 +122,7 @@ internal sealed class SegmentedStatBarElement : GuiElement
         ctx.Fill();
     }
 
-    private static void DrawSegment(Context ctx, StatBarSegment segment, double barX, double barY, double barWidth, double barHeight, double radius)
+    private void DrawSegment(Context ctx, StatBarSegment segment, double barX, double barY, double barWidth, double barHeight, double radius)
     {
         double start = barX + barWidth * segment.StartFraction;
         double end = barX + barWidth * segment.EndFraction;
@@ -165,50 +185,32 @@ internal sealed class SegmentedStatBarElement : GuiElement
         }
     }
 
-    private static void DrawLabels(Context ctx, StatBarLayoutResult layout, double barX, double barY, double barWidth, double scale)
+    private static void DrawEditChrome(Context ctx, int width, int height, double scale)
     {
-        ctx.SelectFontFace("sans-serif", FontSlant.Normal, FontWeight.Bold);
-        ctx.SetFontSize(10 * scale);
+        double inset = Math.Max(1, 2 * scale);
+        double handle = Math.Max(8, 10 * scale);
+        double radius = Math.Max(3, 4 * scale);
 
-        foreach (StatBarSegment segment in layout.Segments)
-        {
-            if (segment.Kind == StatBarSegmentKind.Energy || segment.RenderedAmount < 1)
-            {
-                continue;
-            }
+        RoundRectangle(ctx, inset, inset, Math.Max(1, width - 2 * inset), Math.Max(1, height - 2 * inset), radius);
+        ctx.SetSourceRGBA(0.85, 0.93, 1, 0.55);
+        ctx.LineWidth = Math.Max(1, scale);
+        ctx.Stroke();
 
-            string label = LabelFor(segment.Kind);
-            double center = barX + barWidth * ((segment.StartFraction + segment.EndFraction) / 2);
-            double x = center - (label.Length * 3.2 * scale);
-            double y = Math.Max(10 * scale, barY - 7 * scale);
-            (double r, double g, double b) = ColorFor(segment.Kind);
-
-            ctx.SetSourceRGBA(0, 0, 0, 0.75);
-            ctx.MoveTo(x + scale, y + scale);
-            ctx.ShowText(label);
-
-            ctx.SetSourceRGB(r, g, b);
-            ctx.MoveTo(x, y);
-            ctx.ShowText(label);
-        }
+        DrawHandle(ctx, inset, inset, handle);
+        DrawHandle(ctx, width - inset - handle, inset, handle);
+        DrawHandle(ctx, inset, height - inset - handle, handle);
+        DrawHandle(ctx, width - inset - handle, height - inset - handle, handle);
     }
 
-    private static string LabelFor(StatBarSegmentKind kind) => kind switch
+    private static void DrawHandle(Context ctx, double x, double y, double size)
     {
-        StatBarSegmentKind.Damage => "DMG",
-        StatBarSegmentKind.Cold => "COLD",
-        StatBarSegmentKind.Heat => "HEAT",
-        StatBarSegmentKind.Hunger => "HUN",
-        _ => string.Empty,
-    };
+        RoundRectangle(ctx, x, y, size, size, Math.Max(1, size / 5));
+        ctx.SetSourceRGBA(0.03, 0.04, 0.05, 0.78);
+        ctx.FillPreserve();
+        ctx.SetSourceRGBA(0.85, 0.93, 1, 0.72);
+        ctx.LineWidth = Math.Max(1, RuntimeEnv.GUIScale);
+        ctx.Stroke();
+    }
 
-    private static (double R, double G, double B) ColorFor(StatBarSegmentKind kind) => kind switch
-    {
-        StatBarSegmentKind.Energy => (0.28, 0.7, 0.13),
-        StatBarSegmentKind.Damage => (0.9, 0.2, 0.16),
-        StatBarSegmentKind.Cold => (0.32, 0.52, 0.95),
-        StatBarSegmentKind.Heat => (0.95, 0.55, 0.12),
-        StatBarSegmentKind.Hunger => (0.63, 0.22, 0.85),
-        _ => (0.8, 0.8, 0.8),
-    };
+    private (double R, double G, double B) ColorFor(StatBarSegmentKind kind) => _config.GetColor(kind).ToCairo();
 }

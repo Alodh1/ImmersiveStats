@@ -31,6 +31,7 @@
     <Reference Include="VintagestoryAPI" HintPath="$(GameDirectory)\VintagestoryAPI.dll" Private="false" />
     <Reference Include="VintagestoryLib" HintPath="$(GameDirectory)\VintagestoryLib.dll" Private="false" />
     <Reference Include="cairo-sharp" HintPath="$(GameDirectory)\Lib\cairo-sharp.dll" Private="false" />
+    <Reference Include="protobuf-net" HintPath="$(GameDirectory)\Lib\protobuf-net.dll" Private="false" />
   </ItemGroup>
 
   <Target Name="CheckGameDirectory" BeforeTargets="ResolveReferences">
