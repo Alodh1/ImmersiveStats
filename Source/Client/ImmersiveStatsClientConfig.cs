@@ -4,9 +4,9 @@ internal sealed class ImmersiveStatsClientConfig
 {
     public const string FileName = "immersivestats.client.json";
     public const double DefaultBarWidth = 440;
-    public const double DefaultBarHeight = 96;
+    public const double DefaultBarHeight = 168;
     public const double MinimumBarWidth = 160;
-    public const double MinimumBarHeight = 72;
+    public const double MinimumBarHeight = 132;
     public const int MaximumDebugValue = 100;
 
     public double? BarX { get; set; }

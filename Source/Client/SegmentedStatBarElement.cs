@@ -8,9 +8,9 @@ namespace ImmersiveStats.Client;
 internal sealed class SegmentedStatBarElement : GuiElement
 {
     private const double BarX = 8;
-    private const double BarHeight = 48;
-    private const double IconSize = 28;
-    private const double Radius = 5;
+    private const double BarHeight = 96;
+    private const double IconSize = 46;
+    private const double Radius = 6;
 
     private readonly ImmersiveStatsClientConfig _config;
     private StatBarState _state;
