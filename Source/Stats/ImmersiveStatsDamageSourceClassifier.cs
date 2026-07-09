@@ -4,27 +4,67 @@ namespace ImmersiveStats.Stats;
 
 internal static class ImmersiveStatsDamageSourceClassifier
 {
-    public static StatBarSegmentKind Classify(DamageSource? damageSource)
+    public static bool TryClassifyImmediate(DamageSource? damageSource, out StatBarSegmentKind kind)
     {
+        kind = StatBarSegmentKind.BluntTrauma;
         if (damageSource is null)
         {
-            return StatBarSegmentKind.Damage;
+            return true;
         }
 
-        return damageSource.Type switch
+        if (damageSource.Source == EnumDamageSource.Drown || damageSource.Type == EnumDamageType.Suffocation)
         {
-            EnumDamageType.Frost => StatBarSegmentKind.Cold,
-            EnumDamageType.Fire or EnumDamageType.Heat => StatBarSegmentKind.Heat,
-            EnumDamageType.Poison => StatBarSegmentKind.Poison,
-            EnumDamageType.Gravity => StatBarSegmentKind.Fall,
-            EnumDamageType.Suffocation => StatBarSegmentKind.Suffocation,
-            EnumDamageType.Crushing => StatBarSegmentKind.Crushing,
-            EnumDamageType.Electricity => StatBarSegmentKind.Electricity,
-            EnumDamageType.Acid => StatBarSegmentKind.Acid,
-            EnumDamageType.Hunger => StatBarSegmentKind.Hunger,
-            _ when damageSource.Source == EnumDamageSource.Fall => StatBarSegmentKind.Fall,
-            _ when damageSource.Source == EnumDamageSource.Drown => StatBarSegmentKind.Suffocation,
-            _ => StatBarSegmentKind.Damage,
-        };
+            kind = StatBarSegmentKind.Asphyxiation;
+            return true;
+        }
+
+        if (damageSource.Type == EnumDamageType.Frost && damageSource.Source == EnumDamageSource.Weather)
+        {
+            return false;
+        }
+
+        switch (damageSource.Type)
+        {
+            case EnumDamageType.PiercingAttack:
+            case EnumDamageType.SlashingAttack:
+                kind = StatBarSegmentKind.PenetratingTrauma;
+                return true;
+            case EnumDamageType.BluntAttack:
+            case EnumDamageType.Gravity:
+            case EnumDamageType.Crushing:
+            case EnumDamageType.Injury:
+                kind = StatBarSegmentKind.BluntTrauma;
+                return true;
+            case EnumDamageType.Fire:
+            case EnumDamageType.Frost:
+            case EnumDamageType.Heat:
+                kind = StatBarSegmentKind.Burn;
+                return true;
+            case EnumDamageType.Poison:
+                kind = StatBarSegmentKind.Toxic;
+                return true;
+            case EnumDamageType.Hunger:
+                kind = StatBarSegmentKind.Hunger;
+                return true;
+            case EnumDamageType.Electricity:
+            case EnumDamageType.Acid:
+                return false;
+        }
+
+        if (damageSource.Source == EnumDamageSource.Fall)
+        {
+            kind = StatBarSegmentKind.BluntTrauma;
+            return true;
+        }
+
+        kind = StatBarSegmentKind.BluntTrauma;
+        return true;
+    }
+
+    public static StatBarSegmentKind Classify(DamageSource? damageSource)
+    {
+        return TryClassifyImmediate(damageSource, out StatBarSegmentKind kind)
+            ? kind
+            : StatBarSegmentKind.BluntTrauma;
     }
 }

@@ -16,6 +16,8 @@ internal sealed class SegmentedStatBarElement : GuiElement
     private StatBarState _state;
     private bool _editMode;
     private int _textureId;
+    private float _flashSeconds;
+    private float _flashRedrawAccumulator;
 
     public SegmentedStatBarElement(ICoreClientAPI capi, ElementBounds bounds, StatBarState state, ImmersiveStatsClientConfig config)
         : base(capi, bounds)
@@ -54,6 +56,22 @@ internal sealed class SegmentedStatBarElement : GuiElement
         if (_textureId <= 0)
         {
             return;
+        }
+
+        if (_state.HasActiveConditions)
+        {
+            _flashSeconds += deltaTime;
+            _flashRedrawAccumulator += deltaTime;
+            if (_flashRedrawAccumulator >= 0.1f)
+            {
+                _flashRedrawAccumulator = 0;
+                Redraw();
+            }
+        }
+        else if (_flashSeconds != 0)
+        {
+            _flashSeconds = 0;
+            _flashRedrawAccumulator = 0;
         }
 
         Render2DTexture(_textureId, Bounds.renderX, Bounds.renderY, Bounds.OuterWidthInt, Bounds.OuterHeightInt, 50, new Vec4f(1, 1, 1, 1));
@@ -136,6 +154,15 @@ internal sealed class SegmentedStatBarElement : GuiElement
 
         (double r, double g, double b) = ColorFor(segment.Kind);
         RoundRectangle(ctx, start + 2, barY + 2, Math.Max(1, width - 3), Math.Max(1, barHeight - 4), Math.Max(1, radius - 2));
+        if (segment.ActiveCondition)
+        {
+            double pulse = (Math.Sin(_flashSeconds * Math.PI) + 1) / 2;
+            double mix = 0.10 + 0.20 * pulse;
+            r = r + (1 - r) * mix;
+            g = g + (1 - g) * mix;
+            b = b + (1 - b) * mix;
+        }
+
         ctx.SetSourceRGB(r, g, b);
         ctx.FillPreserve();
 
@@ -146,6 +173,15 @@ internal sealed class SegmentedStatBarElement : GuiElement
         if (segment.Kind != StatBarSegmentKind.Energy)
         {
             DrawHatch(ctx, start + 4, barY + 3, Math.Max(0, width - 7), Math.Max(0, barHeight - 6), r, g, b);
+        }
+
+        if (segment.ActiveCondition)
+        {
+            double pulse = (Math.Sin(_flashSeconds * Math.PI) + 1) / 2;
+            RoundRectangle(ctx, start + 3, barY + 3, Math.Max(1, width - 5), Math.Max(1, barHeight - 6), Math.Max(1, radius - 3));
+            ctx.SetSourceRGBA(1, 1, 1, 0.18 + 0.18 * pulse);
+            ctx.LineWidth = Math.Max(1, 2 * RuntimeEnv.GUIScale);
+            ctx.Stroke();
         }
     }
 

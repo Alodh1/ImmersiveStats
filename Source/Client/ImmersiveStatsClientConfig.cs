@@ -7,7 +7,7 @@ internal sealed class ImmersiveStatsClientConfig
     public const double DefaultBarHeight = 96;
     public const double MinimumBarWidth = 160;
     public const double MinimumBarHeight = 72;
-    public const int MaximumDebugValue = 100;
+    public const int MaximumDebugValue = 5000;
 
     public double? BarX { get; set; }
 
@@ -19,47 +19,71 @@ internal sealed class ImmersiveStatsClientConfig
 
     public bool DebugModeEnabled { get; set; }
 
-    public int DebugDamage { get; set; } = 18;
+    public int DebugPenetratingTrauma { get; set; } = 750;
 
-    public int DebugCold { get; set; } = 9;
+    public int DebugBluntTrauma { get; set; } = 500;
 
-    public int DebugHeat { get; set; } = 6;
+    public int DebugBurn { get; set; } = 250;
 
-    public int DebugPoison { get; set; } = 0;
+    public int DebugCoreTemperature { get; set; }
 
-    public int DebugFall { get; set; } = 0;
+    public int DebugToxic { get; set; }
 
-    public int DebugSuffocation { get; set; } = 0;
+    public int DebugAsphyxiation { get; set; }
 
-    public int DebugCrushing { get; set; } = 0;
+    public int DebugHunger { get; set; } = 2000;
 
-    public int DebugElectricity { get; set; } = 0;
+    public int DebugDamage { get; set; }
 
-    public int DebugAcid { get; set; } = 0;
+    public int DebugCold { get; set; }
 
-    public int DebugHunger { get; set; } = 22;
+    public int DebugHeat { get; set; }
 
-    public ImmersiveStatsRgbColor? EnergyColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(71, 179, 33);
+    public int DebugPoison { get; set; }
 
-    public ImmersiveStatsRgbColor? DamageColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(230, 51, 41);
+    public int DebugFall { get; set; }
 
-    public ImmersiveStatsRgbColor? ColdColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(82, 133, 242);
+    public int DebugSuffocation { get; set; }
 
-    public ImmersiveStatsRgbColor? HeatColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(242, 140, 31);
+    public int DebugCrushing { get; set; }
 
-    public ImmersiveStatsRgbColor? PoisonColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(86, 184, 69);
+    public int DebugElectricity { get; set; }
 
-    public ImmersiveStatsRgbColor? FallColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(194, 182, 154);
+    public int DebugAcid { get; set; }
 
-    public ImmersiveStatsRgbColor? SuffocationColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(67, 188, 204);
+    public ImmersiveStatsRgbColor? EnergyColor { get; set; }
 
-    public ImmersiveStatsRgbColor? CrushingColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(130, 125, 116);
+    public ImmersiveStatsRgbColor? PenetratingTraumaColor { get; set; }
 
-    public ImmersiveStatsRgbColor? ElectricityColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(247, 213, 65);
+    public ImmersiveStatsRgbColor? BluntTraumaColor { get; set; }
 
-    public ImmersiveStatsRgbColor? AcidColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(137, 225, 85);
+    public ImmersiveStatsRgbColor? BurnColor { get; set; }
 
-    public ImmersiveStatsRgbColor? HungerColor { get; set; } = ImmersiveStatsRgbColor.FromRgb(161, 56, 217);
+    public ImmersiveStatsRgbColor? CoreTemperatureColor { get; set; }
+
+    public ImmersiveStatsRgbColor? ToxicColor { get; set; }
+
+    public ImmersiveStatsRgbColor? AsphyxiationColor { get; set; }
+
+    public ImmersiveStatsRgbColor? HungerColor { get; set; }
+
+    public ImmersiveStatsRgbColor? DamageColor { get; set; }
+
+    public ImmersiveStatsRgbColor? ColdColor { get; set; }
+
+    public ImmersiveStatsRgbColor? HeatColor { get; set; }
+
+    public ImmersiveStatsRgbColor? PoisonColor { get; set; }
+
+    public ImmersiveStatsRgbColor? FallColor { get; set; }
+
+    public ImmersiveStatsRgbColor? SuffocationColor { get; set; }
+
+    public ImmersiveStatsRgbColor? CrushingColor { get; set; }
+
+    public ImmersiveStatsRgbColor? ElectricityColor { get; set; }
+
+    public ImmersiveStatsRgbColor? AcidColor { get; set; }
 
     public void Normalize(double viewportWidth, double viewportHeight)
     {
@@ -77,6 +101,14 @@ internal sealed class ImmersiveStatsClientConfig
 
         SetBarRect(HudPlacementMath.Clamp(source, viewportWidth, viewportHeight, MinimumBarWidth, MinimumBarHeight));
 
+        DebugPenetratingTrauma = ClampDebugValue(DebugPenetratingTrauma);
+        DebugBluntTrauma = ClampDebugValue(DebugBluntTrauma);
+        DebugBurn = ClampDebugValue(DebugBurn);
+        DebugCoreTemperature = ClampDebugValue(DebugCoreTemperature);
+        DebugToxic = ClampDebugValue(DebugToxic);
+        DebugAsphyxiation = ClampDebugValue(DebugAsphyxiation);
+        DebugHunger = ClampDebugValue(DebugHunger);
+
         DebugDamage = ClampDebugValue(DebugDamage);
         DebugCold = ClampDebugValue(DebugCold);
         DebugHeat = ClampDebugValue(DebugHeat);
@@ -86,19 +118,15 @@ internal sealed class ImmersiveStatsClientConfig
         DebugCrushing = ClampDebugValue(DebugCrushing);
         DebugElectricity = ClampDebugValue(DebugElectricity);
         DebugAcid = ClampDebugValue(DebugAcid);
-        DebugHunger = ClampDebugValue(DebugHunger);
 
-        EnergyColor = NormalizeColor(EnergyColor, 71, 179, 33);
-        DamageColor = NormalizeColor(DamageColor, 230, 51, 41);
-        ColdColor = NormalizeColor(ColdColor, 82, 133, 242);
-        HeatColor = NormalizeColor(HeatColor, 242, 140, 31);
-        PoisonColor = NormalizeColor(PoisonColor, 86, 184, 69);
-        FallColor = NormalizeColor(FallColor, 194, 182, 154);
-        SuffocationColor = NormalizeColor(SuffocationColor, 67, 188, 204);
-        CrushingColor = NormalizeColor(CrushingColor, 130, 125, 116);
-        ElectricityColor = NormalizeColor(ElectricityColor, 247, 213, 65);
-        AcidColor = NormalizeColor(AcidColor, 137, 225, 85);
-        HungerColor = NormalizeColor(HungerColor, 161, 56, 217);
+        EnergyColor = NormalizeColor(EnergyColor, null, 71, 179, 33);
+        PenetratingTraumaColor = NormalizeColor(PenetratingTraumaColor, null, 186, 35, 63);
+        BluntTraumaColor = NormalizeColor(BluntTraumaColor, DamageColor, 207, 84, 55);
+        BurnColor = NormalizeColor(BurnColor, HeatColor, 242, 140, 31);
+        CoreTemperatureColor = NormalizeColor(CoreTemperatureColor, ColdColor, 82, 133, 242);
+        ToxicColor = NormalizeColor(ToxicColor, PoisonColor, 86, 184, 69);
+        AsphyxiationColor = NormalizeColor(AsphyxiationColor, SuffocationColor, 67, 188, 204);
+        HungerColor = NormalizeColor(HungerColor, null, 161, 56, 217);
     }
 
     public HudRect GetBarRect()
@@ -118,15 +146,12 @@ internal sealed class ImmersiveStatsClientConfig
     {
         return new StatBarState(StatBarLayout.DefaultCapacity, new Dictionary<StatBarSegmentKind, float>
         {
-            [StatBarSegmentKind.Damage] = DebugDamage,
-            [StatBarSegmentKind.Cold] = DebugCold,
-            [StatBarSegmentKind.Heat] = DebugHeat,
-            [StatBarSegmentKind.Poison] = DebugPoison,
-            [StatBarSegmentKind.Fall] = DebugFall,
-            [StatBarSegmentKind.Suffocation] = DebugSuffocation,
-            [StatBarSegmentKind.Crushing] = DebugCrushing,
-            [StatBarSegmentKind.Electricity] = DebugElectricity,
-            [StatBarSegmentKind.Acid] = DebugAcid,
+            [StatBarSegmentKind.PenetratingTrauma] = DebugPenetratingTrauma,
+            [StatBarSegmentKind.BluntTrauma] = DebugBluntTrauma,
+            [StatBarSegmentKind.Burn] = DebugBurn,
+            [StatBarSegmentKind.CoreTemperature] = DebugCoreTemperature,
+            [StatBarSegmentKind.Toxic] = DebugToxic,
+            [StatBarSegmentKind.Asphyxiation] = DebugAsphyxiation,
             [StatBarSegmentKind.Hunger] = DebugHunger,
         });
     }
@@ -136,15 +161,12 @@ internal sealed class ImmersiveStatsClientConfig
         return kind switch
         {
             StatBarSegmentKind.Energy => EnergyColor ?? ImmersiveStatsRgbColor.FromRgb(71, 179, 33),
-            StatBarSegmentKind.Damage => DamageColor ?? ImmersiveStatsRgbColor.FromRgb(230, 51, 41),
-            StatBarSegmentKind.Cold => ColdColor ?? ImmersiveStatsRgbColor.FromRgb(82, 133, 242),
-            StatBarSegmentKind.Heat => HeatColor ?? ImmersiveStatsRgbColor.FromRgb(242, 140, 31),
-            StatBarSegmentKind.Poison => PoisonColor ?? ImmersiveStatsRgbColor.FromRgb(86, 184, 69),
-            StatBarSegmentKind.Fall => FallColor ?? ImmersiveStatsRgbColor.FromRgb(194, 182, 154),
-            StatBarSegmentKind.Suffocation => SuffocationColor ?? ImmersiveStatsRgbColor.FromRgb(67, 188, 204),
-            StatBarSegmentKind.Crushing => CrushingColor ?? ImmersiveStatsRgbColor.FromRgb(130, 125, 116),
-            StatBarSegmentKind.Electricity => ElectricityColor ?? ImmersiveStatsRgbColor.FromRgb(247, 213, 65),
-            StatBarSegmentKind.Acid => AcidColor ?? ImmersiveStatsRgbColor.FromRgb(137, 225, 85),
+            StatBarSegmentKind.PenetratingTrauma => PenetratingTraumaColor ?? ImmersiveStatsRgbColor.FromRgb(186, 35, 63),
+            StatBarSegmentKind.BluntTrauma => BluntTraumaColor ?? ImmersiveStatsRgbColor.FromRgb(207, 84, 55),
+            StatBarSegmentKind.Burn => BurnColor ?? ImmersiveStatsRgbColor.FromRgb(242, 140, 31),
+            StatBarSegmentKind.CoreTemperature => CoreTemperatureColor ?? ImmersiveStatsRgbColor.FromRgb(82, 133, 242),
+            StatBarSegmentKind.Toxic => ToxicColor ?? ImmersiveStatsRgbColor.FromRgb(86, 184, 69),
+            StatBarSegmentKind.Asphyxiation => AsphyxiationColor ?? ImmersiveStatsRgbColor.FromRgb(67, 188, 204),
             StatBarSegmentKind.Hunger => HungerColor ?? ImmersiveStatsRgbColor.FromRgb(161, 56, 217),
             _ => ImmersiveStatsRgbColor.FromRgb(204, 204, 204),
         };
@@ -158,32 +180,23 @@ internal sealed class ImmersiveStatsClientConfig
             case StatBarSegmentKind.Energy:
                 EnergyColor = color;
                 break;
-            case StatBarSegmentKind.Damage:
-                DamageColor = color;
+            case StatBarSegmentKind.PenetratingTrauma:
+                PenetratingTraumaColor = color;
                 break;
-            case StatBarSegmentKind.Cold:
-                ColdColor = color;
+            case StatBarSegmentKind.BluntTrauma:
+                BluntTraumaColor = color;
                 break;
-            case StatBarSegmentKind.Heat:
-                HeatColor = color;
+            case StatBarSegmentKind.Burn:
+                BurnColor = color;
                 break;
-            case StatBarSegmentKind.Poison:
-                PoisonColor = color;
+            case StatBarSegmentKind.CoreTemperature:
+                CoreTemperatureColor = color;
                 break;
-            case StatBarSegmentKind.Fall:
-                FallColor = color;
+            case StatBarSegmentKind.Toxic:
+                ToxicColor = color;
                 break;
-            case StatBarSegmentKind.Suffocation:
-                SuffocationColor = color;
-                break;
-            case StatBarSegmentKind.Crushing:
-                CrushingColor = color;
-                break;
-            case StatBarSegmentKind.Electricity:
-                ElectricityColor = color;
-                break;
-            case StatBarSegmentKind.Acid:
-                AcidColor = color;
+            case StatBarSegmentKind.Asphyxiation:
+                AsphyxiationColor = color;
                 break;
             case StatBarSegmentKind.Hunger:
                 HungerColor = color;
@@ -195,15 +208,12 @@ internal sealed class ImmersiveStatsClientConfig
     {
         return kind switch
         {
-            StatBarSegmentKind.Damage => DebugDamage,
-            StatBarSegmentKind.Cold => DebugCold,
-            StatBarSegmentKind.Heat => DebugHeat,
-            StatBarSegmentKind.Poison => DebugPoison,
-            StatBarSegmentKind.Fall => DebugFall,
-            StatBarSegmentKind.Suffocation => DebugSuffocation,
-            StatBarSegmentKind.Crushing => DebugCrushing,
-            StatBarSegmentKind.Electricity => DebugElectricity,
-            StatBarSegmentKind.Acid => DebugAcid,
+            StatBarSegmentKind.PenetratingTrauma => DebugPenetratingTrauma,
+            StatBarSegmentKind.BluntTrauma => DebugBluntTrauma,
+            StatBarSegmentKind.Burn => DebugBurn,
+            StatBarSegmentKind.CoreTemperature => DebugCoreTemperature,
+            StatBarSegmentKind.Toxic => DebugToxic,
+            StatBarSegmentKind.Asphyxiation => DebugAsphyxiation,
             StatBarSegmentKind.Hunger => DebugHunger,
             _ => 0,
         };
@@ -214,32 +224,23 @@ internal sealed class ImmersiveStatsClientConfig
         value = ClampDebugValue(value);
         switch (kind)
         {
-            case StatBarSegmentKind.Damage:
-                DebugDamage = value;
+            case StatBarSegmentKind.PenetratingTrauma:
+                DebugPenetratingTrauma = value;
                 break;
-            case StatBarSegmentKind.Cold:
-                DebugCold = value;
+            case StatBarSegmentKind.BluntTrauma:
+                DebugBluntTrauma = value;
                 break;
-            case StatBarSegmentKind.Heat:
-                DebugHeat = value;
+            case StatBarSegmentKind.Burn:
+                DebugBurn = value;
                 break;
-            case StatBarSegmentKind.Poison:
-                DebugPoison = value;
+            case StatBarSegmentKind.CoreTemperature:
+                DebugCoreTemperature = value;
                 break;
-            case StatBarSegmentKind.Fall:
-                DebugFall = value;
+            case StatBarSegmentKind.Toxic:
+                DebugToxic = value;
                 break;
-            case StatBarSegmentKind.Suffocation:
-                DebugSuffocation = value;
-                break;
-            case StatBarSegmentKind.Crushing:
-                DebugCrushing = value;
-                break;
-            case StatBarSegmentKind.Electricity:
-                DebugElectricity = value;
-                break;
-            case StatBarSegmentKind.Acid:
-                DebugAcid = value;
+            case StatBarSegmentKind.Asphyxiation:
+                DebugAsphyxiation = value;
                 break;
             case StatBarSegmentKind.Hunger:
                 DebugHunger = value;
@@ -247,9 +248,9 @@ internal sealed class ImmersiveStatsClientConfig
         }
     }
 
-    private static ImmersiveStatsRgbColor NormalizeColor(ImmersiveStatsRgbColor? color, int defaultR, int defaultG, int defaultB)
+    private static ImmersiveStatsRgbColor NormalizeColor(ImmersiveStatsRgbColor? color, ImmersiveStatsRgbColor? legacy, int defaultR, int defaultG, int defaultB)
     {
-        color ??= ImmersiveStatsRgbColor.FromRgb(defaultR, defaultG, defaultB);
+        color ??= legacy?.Copy() ?? ImmersiveStatsRgbColor.FromRgb(defaultR, defaultG, defaultB);
         color.Normalize();
         return color;
     }
@@ -275,15 +276,9 @@ internal sealed class ImmersiveStatsRgbColor
 
     public void Normalize()
     {
-        R = ClampChannel(R);
-        G = ClampChannel(G);
-        B = ClampChannel(B);
-    }
-
-    public (double R, double G, double B) ToCairo()
-    {
-        Normalize();
-        return (R / 255.0, G / 255.0, B / 255.0);
+        R = Clamp(R);
+        G = Clamp(G);
+        B = Clamp(B);
     }
 
     public ImmersiveStatsRgbColor Copy()
@@ -291,7 +286,12 @@ internal sealed class ImmersiveStatsRgbColor
         return FromRgb(R, G, B);
     }
 
-    private static int ClampChannel(int value)
+    public (double R, double G, double B) ToCairo()
+    {
+        return (R / 255.0, G / 255.0, B / 255.0);
+    }
+
+    private static int Clamp(int value)
     {
         return Math.Min(255, Math.Max(0, value));
     }

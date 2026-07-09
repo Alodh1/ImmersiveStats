@@ -24,32 +24,23 @@ internal static class SegmentIconRenderer
 
         switch (kind)
         {
-            case StatBarSegmentKind.Damage:
+            case StatBarSegmentKind.PenetratingTrauma:
                 DrawBrokenHeart(ctx, centerX, centerY, size, scale);
                 break;
-            case StatBarSegmentKind.Cold:
-                DrawIcicle(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Heat:
-                DrawFire(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Poison:
-                DrawSkull(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Fall:
+            case StatBarSegmentKind.BluntTrauma:
                 DrawBrokenBone(ctx, centerX, centerY, size, scale);
                 break;
-            case StatBarSegmentKind.Suffocation:
+            case StatBarSegmentKind.Burn:
+                DrawFire(ctx, centerX, centerY, size, scale);
+                break;
+            case StatBarSegmentKind.CoreTemperature:
+                DrawIcicle(ctx, centerX, centerY, size, scale);
+                break;
+            case StatBarSegmentKind.Toxic:
+                DrawSkull(ctx, centerX, centerY, size, scale);
+                break;
+            case StatBarSegmentKind.Asphyxiation:
                 DrawLungs(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Crushing:
-                DrawCollapsedRocks(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Electricity:
-                DrawLightning(ctx, centerX, centerY, size, scale);
-                break;
-            case StatBarSegmentKind.Acid:
-                DrawStripedDrop(ctx, centerX, centerY, size, scale);
                 break;
             case StatBarSegmentKind.Hunger:
                 DrawStomach(ctx, centerX, centerY, size, scale);

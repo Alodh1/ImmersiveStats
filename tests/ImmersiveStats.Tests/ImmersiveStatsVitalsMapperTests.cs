@@ -2,6 +2,7 @@ using ImmersiveStats.Client;
 using ImmersiveStats.Network;
 using ImmersiveStats.Stats;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Xunit;
 
 namespace ImmersiveStats.Tests;
@@ -9,22 +10,22 @@ namespace ImmersiveStats.Tests;
 public sealed class ImmersiveStatsVitalsMapperTests
 {
     [Fact]
-    public void MissingHealthPercentMapsToDamageReducer()
+    public void FallbackMissingHealthMapsToBluntEnergy()
     {
-        StatBarState state = ToState(currentHealth: 65, maxHealth: 100, currentSaturation: 100, maxSaturation: 100);
+        StatBarState state = ToState(currentHealth: 18, maxHealth: 20, currentSaturation: 5000, maxSaturation: 5000);
 
-        AssertClose(35, state.Damage);
+        AssertClose(500, state.BluntTrauma);
         AssertClose(0, state.Hunger);
-        AssertClose(100, state.Capacity);
+        AssertClose(5000, state.Capacity);
     }
 
     [Fact]
-    public void MissingSaturationPercentMapsToHungerReducer()
+    public void MissingSatietyMapsToHungerEnergyAgainstFiveThousandCapacity()
     {
-        StatBarState state = ToState(currentHealth: 100, maxHealth: 100, currentSaturation: 42, maxSaturation: 100);
+        StatBarState state = ToState(currentHealth: 20, maxHealth: 20, currentSaturation: 1500, maxSaturation: 5000);
 
-        AssertClose(0, state.Damage);
-        AssertClose(58, state.Hunger);
+        AssertClose(0, state.BluntTrauma);
+        AssertClose(3500, state.Hunger);
     }
 
     [Theory]
@@ -32,97 +33,77 @@ public sealed class ImmersiveStatsVitalsMapperTests
     [InlineData(-10)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
-    public void InvalidMaxValuesClampReducersToZero(float maxValue)
+    public void InvalidMaxHealthClampsFallbackHealthDamageToZero(float maxHealth)
     {
-        StatBarState state = ToState(currentHealth: 1, maxValue, currentSaturation: 1, maxValue);
+        StatBarState state = ToState(currentHealth: 1, maxHealth, currentSaturation: 5000, maxSaturation: 5000);
 
-        AssertClose(0, state.Damage);
+        AssertClose(0, state.BluntTrauma);
         AssertClose(0, state.Hunger);
     }
 
     [Fact]
-    public void RealVitalsKeepColdAndHeatAtZeroOutsideDebugMode()
-    {
-        StatBarState state = ToState(currentHealth: 50, maxHealth: 100, currentSaturation: 50, maxSaturation: 100);
-
-        AssertClose(0, state.Cold);
-        AssertClose(0, state.Heat);
-    }
-
-    [Fact]
-    public void CategorizedHealthLossMapsToSeparateReducers()
+    public void CategorizedEnergyMapsToParentReducersAndActiveFlags()
     {
         ImmersiveStatsVitalsSnapshot snapshot = ImmersiveStatsVitalsMapper.CreateCategorizedSnapshot(
             currentHealth: 50,
             maxHealth: 100,
-            currentSaturation: 100,
-            maxSaturation: 100,
-            damageHealthPoints: 10,
-            coldHealthPoints: 15,
-            heatHealthPoints: 20,
-            poisonHealthPoints: 3,
-            fallHealthPoints: 4,
-            suffocationHealthPoints: 5,
-            crushingHealthPoints: 6,
-            electricityHealthPoints: 7,
-            acidHealthPoints: 8,
-            hungerHealthPoints: 5);
+            currentSaturation: 5000,
+            maxSaturation: 5000,
+            new Dictionary<StatBarSegmentKind, float>
+            {
+                [StatBarSegmentKind.PenetratingTrauma] = 100,
+                [StatBarSegmentKind.BluntTrauma] = 200,
+                [StatBarSegmentKind.Burn] = 300,
+                [StatBarSegmentKind.CoreTemperature] = 400,
+                [StatBarSegmentKind.Toxic] = 500,
+                [StatBarSegmentKind.Asphyxiation] = 600,
+                [StatBarSegmentKind.Hunger] = 700,
+            },
+            [StatBarSegmentKind.PenetratingTrauma, StatBarSegmentKind.Burn]);
 
         StatBarState state = ImmersiveStatsVitalsMapper.ToStatBarState(snapshot);
 
-        AssertClose(10, state.Damage);
-        AssertClose(15, state.Cold);
-        AssertClose(20, state.Heat);
-        AssertClose(3, state.Poison);
-        AssertClose(4, state.Fall);
-        AssertClose(5, state.Suffocation);
-        AssertClose(6, state.Crushing);
-        AssertClose(7, state.Electricity);
-        AssertClose(8, state.Acid);
-        AssertClose(5, state.Hunger);
-    }
-
-    [Fact]
-    public void HealthHungerAndMissingSaturationShareHungerReducer()
-    {
-        ImmersiveStatsVitalsSnapshot snapshot = ImmersiveStatsVitalsMapper.CreateCategorizedSnapshot(
-            currentHealth: 90,
-            maxHealth: 100,
-            currentSaturation: 50,
-            maxSaturation: 100,
-            damageHealthPoints: 0,
-            coldHealthPoints: 0,
-            heatHealthPoints: 0,
-            hungerHealthPoints: 10);
-
-        StatBarState state = ImmersiveStatsVitalsMapper.ToStatBarState(snapshot);
-
-        AssertClose(60, state.Hunger);
+        AssertClose(100, state.PenetratingTrauma);
+        AssertClose(200, state.BluntTrauma);
+        AssertClose(300, state.Burn);
+        AssertClose(400, state.CoreTemperature);
+        AssertClose(500, state.Toxic);
+        AssertClose(600, state.Asphyxiation);
+        AssertClose(700, state.Hunger);
+        Assert.True(state.IsConditionActive(StatBarSegmentKind.PenetratingTrauma));
+        Assert.True(state.IsConditionActive(StatBarSegmentKind.Burn));
+        Assert.False(state.IsConditionActive(StatBarSegmentKind.BluntTrauma));
     }
 
     [Fact]
     public void CombinedReducersStillUseLayoutCapacityClamping()
     {
-        StatBarState state = ToState(currentHealth: 0, maxHealth: 100, currentSaturation: 0, maxSaturation: 100);
+        var state = new StatBarState(5000, new Dictionary<StatBarSegmentKind, float>
+        {
+            [StatBarSegmentKind.PenetratingTrauma] = 6000,
+            [StatBarSegmentKind.Hunger] = 5000,
+        });
         StatBarLayoutResult layout = StatBarLayout.Calculate(state);
 
         AssertClose(0, layout.EnergyAmount);
-        Assert.Equal([StatBarSegmentKind.Damage], layout.Segments.Select(segment => segment.Kind).ToArray());
-        AssertClose(100, layout.Segments[0].RenderedAmount);
+        Assert.Equal([StatBarSegmentKind.PenetratingTrauma], layout.Segments.Select(segment => segment.Kind).ToArray());
+        AssertClose(5000, layout.Segments[0].RenderedAmount);
     }
 
     [Theory]
-    [InlineData(EnumDamageType.Frost, StatBarSegmentKind.Cold)]
-    [InlineData(EnumDamageType.Fire, StatBarSegmentKind.Heat)]
-    [InlineData(EnumDamageType.Heat, StatBarSegmentKind.Heat)]
-    [InlineData(EnumDamageType.Poison, StatBarSegmentKind.Poison)]
-    [InlineData(EnumDamageType.Gravity, StatBarSegmentKind.Fall)]
-    [InlineData(EnumDamageType.Suffocation, StatBarSegmentKind.Suffocation)]
-    [InlineData(EnumDamageType.Crushing, StatBarSegmentKind.Crushing)]
-    [InlineData(EnumDamageType.Electricity, StatBarSegmentKind.Electricity)]
-    [InlineData(EnumDamageType.Acid, StatBarSegmentKind.Acid)]
+    [InlineData(EnumDamageType.PiercingAttack, StatBarSegmentKind.PenetratingTrauma)]
+    [InlineData(EnumDamageType.SlashingAttack, StatBarSegmentKind.PenetratingTrauma)]
+    [InlineData(EnumDamageType.BluntAttack, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageType.Gravity, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageType.Crushing, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageType.Injury, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageType.Fire, StatBarSegmentKind.Burn)]
+    [InlineData(EnumDamageType.Frost, StatBarSegmentKind.Burn)]
+    [InlineData(EnumDamageType.Heat, StatBarSegmentKind.Burn)]
+    [InlineData(EnumDamageType.Poison, StatBarSegmentKind.Toxic)]
+    [InlineData(EnumDamageType.Suffocation, StatBarSegmentKind.Asphyxiation)]
     [InlineData(EnumDamageType.Hunger, StatBarSegmentKind.Hunger)]
-    public void DamageTypesClassifyIntoHudSegments(EnumDamageType damageType, StatBarSegmentKind expected)
+    public void DamageTypesClassifyIntoParentHudSegments(EnumDamageType damageType, StatBarSegmentKind expected)
     {
         var source = new DamageSource
         {
@@ -130,16 +111,17 @@ public sealed class ImmersiveStatsVitalsMapperTests
             Type = damageType,
         };
 
-        Assert.Equal(expected, ImmersiveStatsDamageSourceClassifier.Classify(source));
+        Assert.True(ImmersiveStatsDamageSourceClassifier.TryClassifyImmediate(source, out StatBarSegmentKind actual));
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
-    [InlineData(EnumDamageSource.Fall, EnumDamageType.Injury, StatBarSegmentKind.Fall)]
-    [InlineData(EnumDamageSource.Drown, EnumDamageType.Injury, StatBarSegmentKind.Suffocation)]
-    [InlineData(EnumDamageSource.Player, EnumDamageType.BluntAttack, StatBarSegmentKind.Damage)]
-    [InlineData(EnumDamageSource.Entity, EnumDamageType.SlashingAttack, StatBarSegmentKind.Damage)]
-    [InlineData(EnumDamageSource.Block, EnumDamageType.PiercingAttack, StatBarSegmentKind.Damage)]
-    public void DamageSourcesClassifyIntoHudSegments(EnumDamageSource sourceKind, EnumDamageType damageType, StatBarSegmentKind expected)
+    [InlineData(EnumDamageSource.Fall, EnumDamageType.Injury, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageSource.Drown, EnumDamageType.Injury, StatBarSegmentKind.Asphyxiation)]
+    [InlineData(EnumDamageSource.Player, EnumDamageType.BluntAttack, StatBarSegmentKind.BluntTrauma)]
+    [InlineData(EnumDamageSource.Entity, EnumDamageType.SlashingAttack, StatBarSegmentKind.PenetratingTrauma)]
+    [InlineData(EnumDamageSource.Block, EnumDamageType.PiercingAttack, StatBarSegmentKind.PenetratingTrauma)]
+    public void DamageSourcesClassifyIntoParentHudSegments(EnumDamageSource sourceKind, EnumDamageType damageType, StatBarSegmentKind expected)
     {
         var source = new DamageSource
         {
@@ -147,61 +129,109 @@ public sealed class ImmersiveStatsVitalsMapperTests
             Type = damageType,
         };
 
-        Assert.Equal(expected, ImmersiveStatsDamageSourceClassifier.Classify(source));
+        Assert.True(ImmersiveStatsDamageSourceClassifier.TryClassifyImmediate(source, out StatBarSegmentKind actual));
+        Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void BucketsReconcileHealingProportionally()
+    [Theory]
+    [InlineData(EnumDamageType.Electricity)]
+    [InlineData(EnumDamageType.Acid)]
+    public void OutOfScopeDamageTypesAreNotTrackedThisPass(EnumDamageType damageType)
     {
-        var buckets = new ImmersiveStatsDamageBuckets();
-        buckets.Add(StatBarSegmentKind.Damage, 10);
-        buckets.Add(StatBarSegmentKind.Cold, 30);
-        buckets.Add(StatBarSegmentKind.Poison, 20);
+        var source = new DamageSource
+        {
+            Source = EnumDamageSource.Unknown,
+            Type = damageType,
+        };
 
-        buckets.ReconcileToMissingHealth(30);
-
-        AssertClose(5, buckets.Damage);
-        AssertClose(15, buckets.Cold);
-        AssertClose(10, buckets.Poison);
+        Assert.False(ImmersiveStatsDamageSourceClassifier.TryClassifyImmediate(source, out _));
     }
 
     [Fact]
-    public void BucketsAssignUnknownExistingMissingHealthToDamage()
+    public void WeatherFrostIsHandledByTemperatureExposureInsteadOfImmediateDamage()
     {
-        var buckets = new ImmersiveStatsDamageBuckets();
+        var source = new DamageSource
+        {
+            Source = EnumDamageSource.Weather,
+            Type = EnumDamageType.Frost,
+        };
 
-        buckets.ReconcileToMissingHealth(12);
-
-        AssertClose(12, buckets.Damage);
-        AssertClose(0, buckets.Cold);
-        AssertClose(0, buckets.Heat);
-        AssertClose(0, buckets.Poison);
-        AssertClose(0, buckets.Fall);
-        AssertClose(0, buckets.Suffocation);
-        AssertClose(0, buckets.Crushing);
-        AssertClose(0, buckets.Electricity);
-        AssertClose(0, buckets.Acid);
-        AssertClose(0, buckets.Hunger);
+        Assert.False(ImmersiveStatsDamageSourceClassifier.TryClassifyImmediate(source, out _));
     }
 
     [Fact]
-    public void VitalsPacketRoundTripsAllReducerCategories()
+    public void HealthDamageConvertsToEnergy()
+    {
+        AssertClose(875, ImmersiveStatsVitalsMapper.HealthDamageToEnergy(3.5f));
+    }
+
+    [Fact]
+    public void HungerCapacityUpgradeKeepsCurrentSaturationRaw()
+    {
+        var hunger = new TreeAttribute();
+        hunger.SetFloat("currentsaturation", 1500);
+        hunger.SetFloat("maxsaturation", 1500);
+        bool markedDirty = false;
+
+        bool changed = ImmersiveStatsHungerCapacity.EnsureTargetCapacity(hunger, () => markedDirty = true);
+
+        Assert.True(changed);
+        Assert.True(markedDirty);
+        AssertClose(1500, hunger.GetFloat("currentsaturation"));
+        AssertClose(5000, hunger.GetFloat("maxsaturation"));
+    }
+
+    [Fact]
+    public void TimedConditionPreservesRemainingEnergyWhenRetriggered()
+    {
+        var condition = new ImmersiveStatsTimedEnergyCondition();
+        condition.Trigger(120, 120);
+
+        AssertClose(60, condition.Tick(60));
+        condition.Trigger(60, 120);
+
+        AssertClose(120, condition.RemainingEnergy);
+        AssertClose(120, condition.RemainingSeconds);
+    }
+
+    [Fact]
+    public void ThermalExposureAccumulatesAndRecoversAfterSafeDelay()
+    {
+        var condition = new ImmersiveStatsThermalExposureCondition(thresholdCelsius: 35, energyPerDegreeSecond: 2);
+
+        AssertClose(20, condition.Update(bodyTemperature: 34, deltaTime: 10));
+        AssertClose(20, condition.Amount);
+
+        AssertClose(0, condition.Update(bodyTemperature: 36, deltaTime: 9));
+        AssertClose(20, condition.Amount);
+
+        float firstRecoveryDelta = condition.Update(bodyTemperature: 36, deltaTime: 1);
+        Assert.True(firstRecoveryDelta < 0);
+
+        condition.Update(bodyTemperature: 36, deltaTime: 120);
+        AssertClose(0, condition.Amount);
+        Assert.False(condition.Active);
+    }
+
+    [Fact]
+    public void VitalsPacketRoundTripsParentReducersAndActiveFlags()
     {
         ImmersiveStatsVitalsSnapshot snapshot = ImmersiveStatsVitalsMapper.CreateCategorizedSnapshot(
             currentHealth: 10,
             maxHealth: 100,
-            currentSaturation: 100,
-            maxSaturation: 100,
-            damageHealthPoints: 1,
-            coldHealthPoints: 2,
-            heatHealthPoints: 3,
-            poisonHealthPoints: 4,
-            fallHealthPoints: 5,
-            suffocationHealthPoints: 6,
-            crushingHealthPoints: 7,
-            electricityHealthPoints: 8,
-            acidHealthPoints: 9,
-            hungerHealthPoints: 10);
+            currentSaturation: 5000,
+            maxSaturation: 5000,
+            new Dictionary<StatBarSegmentKind, float>
+            {
+                [StatBarSegmentKind.PenetratingTrauma] = 1,
+                [StatBarSegmentKind.BluntTrauma] = 2,
+                [StatBarSegmentKind.Burn] = 3,
+                [StatBarSegmentKind.CoreTemperature] = 4,
+                [StatBarSegmentKind.Toxic] = 5,
+                [StatBarSegmentKind.Asphyxiation] = 6,
+                [StatBarSegmentKind.Hunger] = 7,
+            },
+            [StatBarSegmentKind.PenetratingTrauma, StatBarSegmentKind.BluntTrauma, StatBarSegmentKind.Burn, StatBarSegmentKind.CoreTemperature]);
 
         ImmersiveStatsVitalsSnapshot roundTripped = ImmersiveStatsVitalsPacket.FromSnapshot(snapshot).ToSnapshot();
 
@@ -224,26 +254,26 @@ public sealed class ImmersiveStatsVitalsMapperTests
         var config = new ImmersiveStatsClientConfig
         {
             DebugModeEnabled = true,
-            DebugDamage = 12,
-            DebugCold = 3,
-            DebugHeat = 4,
-            DebugHunger = 5,
+            DebugPenetratingTrauma = 120,
+            DebugBluntTrauma = 30,
+            DebugBurn = 40,
+            DebugCoreTemperature = 50,
+            DebugToxic = 60,
+            DebugAsphyxiation = 70,
+            DebugHunger = 80,
         };
-        var source = new FakeVitalsSource(ImmersiveStatsVitalsMapper.CreateSnapshot(10, 100, 10, 100));
+        var source = new FakeVitalsSource(ImmersiveStatsVitalsMapper.CreateSnapshot(10, 100, 10, 5000));
 
         StatBarState state = ImmersiveStatsDisplayStateResolver.Resolve(config, source, StatBarState.Empty);
 
         Assert.False(source.WasRead);
-        AssertClose(12, state.Damage);
-        AssertClose(3, state.Cold);
-        AssertClose(4, state.Heat);
-        AssertClose(0, state.Poison);
-        AssertClose(0, state.Fall);
-        AssertClose(0, state.Suffocation);
-        AssertClose(0, state.Crushing);
-        AssertClose(0, state.Electricity);
-        AssertClose(0, state.Acid);
-        AssertClose(5, state.Hunger);
+        AssertClose(120, state.PenetratingTrauma);
+        AssertClose(30, state.BluntTrauma);
+        AssertClose(40, state.Burn);
+        AssertClose(50, state.CoreTemperature);
+        AssertClose(60, state.Toxic);
+        AssertClose(70, state.Asphyxiation);
+        AssertClose(80, state.Hunger);
     }
 
     private static StatBarState ToState(float currentHealth, float maxHealth, float currentSaturation, float maxSaturation)

@@ -5,7 +5,7 @@ namespace ImmersiveStats.Debug;
 /// </summary>
 internal sealed class DebugStatBarState
 {
-    private StatBarState _current = new(StatBarLayout.DefaultCapacity, 18, 9, 6, 22);
+    private StatBarState _current = new(StatBarLayout.DefaultCapacity, 750, 500, 250, 2000);
 
     public event Action? Changed;
 

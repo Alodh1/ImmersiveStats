@@ -22,34 +22,37 @@ public sealed class ImmersiveStatsVitalsPacket
     public float Capacity { get; set; }
 
     [ProtoMember(6)]
-    public float DamageReducer { get; set; }
+    public float PenetratingTraumaReducer { get; set; }
 
     [ProtoMember(7)]
-    public float ColdReducer { get; set; }
+    public float BluntTraumaReducer { get; set; }
 
     [ProtoMember(8)]
-    public float HeatReducer { get; set; }
+    public float BurnReducer { get; set; }
 
     [ProtoMember(9)]
-    public float PoisonReducer { get; set; }
+    public float CoreTemperatureReducer { get; set; }
 
     [ProtoMember(10)]
-    public float FallReducer { get; set; }
+    public float ToxicReducer { get; set; }
 
     [ProtoMember(11)]
-    public float SuffocationReducer { get; set; }
+    public float AsphyxiationReducer { get; set; }
 
     [ProtoMember(12)]
-    public float CrushingReducer { get; set; }
+    public float HungerReducer { get; set; }
 
     [ProtoMember(13)]
-    public float ElectricityReducer { get; set; }
+    public bool PenetratingTraumaActive { get; set; }
 
     [ProtoMember(14)]
-    public float AcidReducer { get; set; }
+    public bool BluntTraumaActive { get; set; }
 
     [ProtoMember(15)]
-    public float HungerReducer { get; set; }
+    public bool BurnActive { get; set; }
+
+    [ProtoMember(16)]
+    public bool CoreTemperatureActive { get; set; }
 
     internal static ImmersiveStatsVitalsPacket FromSnapshot(ImmersiveStatsVitalsSnapshot snapshot)
     {
@@ -60,16 +63,17 @@ public sealed class ImmersiveStatsVitalsPacket
             CurrentSaturation = snapshot.CurrentSaturation,
             MaxSaturation = snapshot.MaxSaturation,
             Capacity = snapshot.Capacity,
-            DamageReducer = snapshot.DamageReducer,
-            ColdReducer = snapshot.ColdReducer,
-            HeatReducer = snapshot.HeatReducer,
-            PoisonReducer = snapshot.PoisonReducer,
-            FallReducer = snapshot.FallReducer,
-            SuffocationReducer = snapshot.SuffocationReducer,
-            CrushingReducer = snapshot.CrushingReducer,
-            ElectricityReducer = snapshot.ElectricityReducer,
-            AcidReducer = snapshot.AcidReducer,
+            PenetratingTraumaReducer = snapshot.PenetratingTraumaReducer,
+            BluntTraumaReducer = snapshot.BluntTraumaReducer,
+            BurnReducer = snapshot.BurnReducer,
+            CoreTemperatureReducer = snapshot.CoreTemperatureReducer,
+            ToxicReducer = snapshot.ToxicReducer,
+            AsphyxiationReducer = snapshot.AsphyxiationReducer,
             HungerReducer = snapshot.HungerReducer,
+            PenetratingTraumaActive = snapshot.PenetratingTraumaActive,
+            BluntTraumaActive = snapshot.BluntTraumaActive,
+            BurnActive = snapshot.BurnActive,
+            CoreTemperatureActive = snapshot.CoreTemperatureActive,
         };
     }
 
@@ -81,15 +85,16 @@ public sealed class ImmersiveStatsVitalsPacket
             CurrentSaturation,
             MaxSaturation,
             Capacity,
-            DamageReducer,
-            ColdReducer,
-            HeatReducer,
-            PoisonReducer,
-            FallReducer,
-            SuffocationReducer,
-            CrushingReducer,
-            ElectricityReducer,
-            AcidReducer,
-            HungerReducer);
+            PenetratingTraumaReducer,
+            BluntTraumaReducer,
+            BurnReducer,
+            CoreTemperatureReducer,
+            ToxicReducer,
+            AsphyxiationReducer,
+            HungerReducer,
+            PenetratingTraumaActive,
+            BluntTraumaActive,
+            BurnActive,
+            CoreTemperatureActive);
     }
 }

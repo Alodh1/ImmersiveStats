@@ -4,15 +4,12 @@ public static class StatBarSegmentCatalog
 {
     private static readonly StatBarSegmentKind[] ReducerKindsValue =
     [
-        StatBarSegmentKind.Damage,
-        StatBarSegmentKind.Cold,
-        StatBarSegmentKind.Heat,
-        StatBarSegmentKind.Poison,
-        StatBarSegmentKind.Fall,
-        StatBarSegmentKind.Suffocation,
-        StatBarSegmentKind.Crushing,
-        StatBarSegmentKind.Electricity,
-        StatBarSegmentKind.Acid,
+        StatBarSegmentKind.PenetratingTrauma,
+        StatBarSegmentKind.BluntTrauma,
+        StatBarSegmentKind.Burn,
+        StatBarSegmentKind.CoreTemperature,
+        StatBarSegmentKind.Toxic,
+        StatBarSegmentKind.Asphyxiation,
         StatBarSegmentKind.Hunger,
     ];
 
@@ -21,15 +18,12 @@ public static class StatBarSegmentCatalog
     public static string DisplayName(StatBarSegmentKind kind) => kind switch
     {
         StatBarSegmentKind.Energy => "Energy",
-        StatBarSegmentKind.Damage => "Injury",
-        StatBarSegmentKind.Cold => "Cold",
-        StatBarSegmentKind.Heat => "Heat",
-        StatBarSegmentKind.Poison => "Poison",
-        StatBarSegmentKind.Fall => "Fall",
-        StatBarSegmentKind.Suffocation => "Suffocation",
-        StatBarSegmentKind.Crushing => "Crushing",
-        StatBarSegmentKind.Electricity => "Electricity",
-        StatBarSegmentKind.Acid => "Acid",
+        StatBarSegmentKind.PenetratingTrauma => "Penetrating Trauma",
+        StatBarSegmentKind.BluntTrauma => "Blunt Trauma",
+        StatBarSegmentKind.Burn => "Burn",
+        StatBarSegmentKind.CoreTemperature => "Core Temperature",
+        StatBarSegmentKind.Toxic => "Toxic",
+        StatBarSegmentKind.Asphyxiation => "Asphyxiation",
         StatBarSegmentKind.Hunger => "Hunger",
         _ => kind.ToString(),
     };

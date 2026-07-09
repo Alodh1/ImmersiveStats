@@ -6,4 +6,5 @@ public sealed record StatBarSegment(
     float RenderedAmount,
     float StartFraction,
     float EndFraction,
-    string ColorKey);
+    string ColorKey,
+    bool ActiveCondition);

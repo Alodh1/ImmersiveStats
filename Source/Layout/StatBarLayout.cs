@@ -2,7 +2,7 @@ namespace ImmersiveStats;
 
 public static class StatBarLayout
 {
-    public const float DefaultCapacity = 100f;
+    public const float DefaultCapacity = 5000f;
     private const float Epsilon = 0.0001f;
 
     public static StatBarLayoutResult Calculate(StatBarState state)
@@ -38,7 +38,8 @@ public static class StatBarLayout
                 remaining,
                 0,
                 end,
-                "energy"));
+                "energy",
+                ActiveCondition: false));
             cursor = end;
         }
 
@@ -58,7 +59,8 @@ public static class StatBarLayout
                 amount,
                 cursor,
                 end,
-                ColorKey(kind)));
+                ColorKey(kind),
+                state.IsConditionActive(kind)));
             cursor = end;
         }
 
@@ -88,15 +90,12 @@ public static class StatBarLayout
     private static string ColorKey(StatBarSegmentKind kind) => kind switch
     {
         StatBarSegmentKind.Energy => "energy",
-        StatBarSegmentKind.Damage => "damage",
-        StatBarSegmentKind.Cold => "cold",
-        StatBarSegmentKind.Heat => "heat",
-        StatBarSegmentKind.Poison => "poison",
-        StatBarSegmentKind.Fall => "fall",
-        StatBarSegmentKind.Suffocation => "suffocation",
-        StatBarSegmentKind.Crushing => "crushing",
-        StatBarSegmentKind.Electricity => "electricity",
-        StatBarSegmentKind.Acid => "acid",
+        StatBarSegmentKind.PenetratingTrauma => "penetrating",
+        StatBarSegmentKind.BluntTrauma => "blunt",
+        StatBarSegmentKind.Burn => "burn",
+        StatBarSegmentKind.CoreTemperature => "coretemp",
+        StatBarSegmentKind.Toxic => "toxic",
+        StatBarSegmentKind.Asphyxiation => "asphyxiation",
         StatBarSegmentKind.Hunger => "hunger",
         _ => "unknown",
     };

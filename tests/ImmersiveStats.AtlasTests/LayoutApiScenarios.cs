@@ -18,7 +18,7 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
         Type layoutType = assembly.GetType("ImmersiveStats.StatBarLayout")
             ?? throw new InvalidOperationException("StatBarLayout type was not found.");
 
-        object state = Activator.CreateInstance(stateType, 100f, 25f, 0f, 0f, 25f)
+        object state = Activator.CreateInstance(stateType, 5000f, 1250f, 0f, 0f, 1250f)
             ?? throw new InvalidOperationException("Could not create StatBarState.");
 
         MethodInfo calculate = layoutType.GetMethod("Calculate", BindingFlags.Public | BindingFlags.Static, [stateType])
@@ -29,13 +29,13 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
 
         float energy = (float)(result.GetType().GetProperty("EnergyAmount")?.GetValue(result)
             ?? throw new InvalidOperationException("EnergyAmount was not available."));
-        Assert.Equal(50f, energy);
+        Assert.Equal(2500f, energy);
 
         object segmentsValue = result.GetType().GetProperty("Segments")?.GetValue(result)
             ?? throw new InvalidOperationException("Segments was not available.");
         var segments = ((System.Collections.IEnumerable)segmentsValue).Cast<object>().ToArray();
 
-        Assert.Equal(["Energy", "Damage", "Hunger"], segments.Select(GetKindName).ToArray());
+        Assert.Equal(["Energy", "PenetratingTrauma", "Hunger"], segments.Select(GetKindName).ToArray());
     }
 
     [AtlasScenario(TimeoutMs = 120000)]
@@ -50,26 +50,34 @@ public sealed class LayoutApiScenarios : AtlasScenarioBase
         Assert.NotNull(assembly.GetType("ImmersiveStats.Commands.ImmersiveStatsCommandParser", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsSnapshot", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsVitalsMapper", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsTimedEnergyCondition", throwOnError: false));
+        Assert.NotNull(assembly.GetType("ImmersiveStats.Stats.ImmersiveStatsThermalExposureCondition", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsServerVitalsTracker", throwOnError: false));
         Assert.NotNull(assembly.GetType("ImmersiveStats.Server.ImmersiveStatsDamageTrackerBehavior", throwOnError: false));
 
         Type segmentKindType = assembly.GetType("ImmersiveStats.StatBarSegmentKind")
             ?? throw new InvalidOperationException("StatBarSegmentKind type was not found.");
-        Assert.Contains("Poison", Enum.GetNames(segmentKindType));
-        Assert.Contains("Fall", Enum.GetNames(segmentKindType));
-        Assert.Contains("Suffocation", Enum.GetNames(segmentKindType));
-        Assert.Contains("Crushing", Enum.GetNames(segmentKindType));
-        Assert.Contains("Electricity", Enum.GetNames(segmentKindType));
-        Assert.Contains("Acid", Enum.GetNames(segmentKindType));
+        Assert.Contains("PenetratingTrauma", Enum.GetNames(segmentKindType));
+        Assert.Contains("BluntTrauma", Enum.GetNames(segmentKindType));
+        Assert.Contains("Burn", Enum.GetNames(segmentKindType));
+        Assert.Contains("CoreTemperature", Enum.GetNames(segmentKindType));
+        Assert.Contains("Toxic", Enum.GetNames(segmentKindType));
+        Assert.Contains("Asphyxiation", Enum.GetNames(segmentKindType));
+        Assert.Contains("Hunger", Enum.GetNames(segmentKindType));
 
         Type packetType = assembly.GetType("ImmersiveStats.Network.ImmersiveStatsVitalsPacket")
             ?? throw new InvalidOperationException("ImmersiveStatsVitalsPacket type was not found.");
-        Assert.NotNull(packetType.GetProperty("PoisonReducer"));
-        Assert.NotNull(packetType.GetProperty("FallReducer"));
-        Assert.NotNull(packetType.GetProperty("SuffocationReducer"));
-        Assert.NotNull(packetType.GetProperty("CrushingReducer"));
-        Assert.NotNull(packetType.GetProperty("ElectricityReducer"));
-        Assert.NotNull(packetType.GetProperty("AcidReducer"));
+        Assert.NotNull(packetType.GetProperty("PenetratingTraumaReducer"));
+        Assert.NotNull(packetType.GetProperty("BluntTraumaReducer"));
+        Assert.NotNull(packetType.GetProperty("BurnReducer"));
+        Assert.NotNull(packetType.GetProperty("CoreTemperatureReducer"));
+        Assert.NotNull(packetType.GetProperty("ToxicReducer"));
+        Assert.NotNull(packetType.GetProperty("AsphyxiationReducer"));
+        Assert.NotNull(packetType.GetProperty("HungerReducer"));
+        Assert.NotNull(packetType.GetProperty("PenetratingTraumaActive"));
+        Assert.NotNull(packetType.GetProperty("BluntTraumaActive"));
+        Assert.NotNull(packetType.GetProperty("BurnActive"));
+        Assert.NotNull(packetType.GetProperty("CoreTemperatureActive"));
     }
 
     private static Assembly GetImmersiveStatsAssembly()

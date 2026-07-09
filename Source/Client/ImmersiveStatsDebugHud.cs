@@ -78,7 +78,7 @@ internal sealed class ImmersiveStatsDebugHud : HudElement
         composer
             .AddStaticText(label, CairoFont.WhiteSmallText(), ElementBounds.Fixed(x, y + 2, 92, 20))
             .AddSlider(value => OnDebugValueChanged(kind, value), ElementBounds.Fixed(x + 98, y, 196, 22), key);
-        composer.GetSlider(key).SetValues(_config.GetDebugValue(kind), 0, ImmersiveStatsClientConfig.MaximumDebugValue, 1);
+        composer.GetSlider(key).SetValues(_config.GetDebugValue(kind), 0, ImmersiveStatsClientConfig.MaximumDebugValue, 25);
     }
 
     private bool OnDebugValueChanged(StatBarSegmentKind kind, int value)
